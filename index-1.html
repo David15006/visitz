@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VisitePro — Gestion des visites de chantiers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0D1B2A;color:white;min-height:100vh;display:flex;flex-direction:column;}
+.hero{
+  background:linear-gradient(135deg,#0D1B2A 0%,#1A3A5C 60%,#0D1B2A 100%);
+  padding:80px 24px 60px;text-align:center;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;top:-60px;right:-60px;width:300px;height:300px;
+  border-radius:50%;background:rgba(0,168,150,0.08);
+}
+.hero::after{
+  content:"";position:absolute;bottom:-40px;left:-40px;width:200px;height:200px;
+  border-radius:50%;background:rgba(0,168,150,0.05);
+}
+.logo{
+  display:inline-flex;align-items:center;gap:14px;margin-bottom:32px;
+}
+.logo-icon{
+  background:#00A896;border-radius:16px;width:52px;height:52px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 4px 20px rgba(0,168,150,0.4);
+}
+.logo-name{font-size:32px;font-weight:900;letter-spacing:0.5px;}
+.badge{
+  background:rgba(245,158,11,0.9);color:#1C1917;font-size:11px;font-weight:800;
+  border-radius:8px;padding:4px 10px;letter-spacing:0.8px;vertical-align:middle;
+  margin-left:10px;
+}
+.tagline{font-size:18px;color:rgba(255,255,255,0.65);max-width:500px;margin:0 auto 16px;line-height:1.6;}
+.subtitle{font-size:13px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;text-transform:uppercase;}
+
+.cards{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:20px;padding:48px 24px;max-width:1000px;margin:0 auto;width:100%;
+}
+.card{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;padding:28px;text-decoration:none;color:white;
+  transition:transform 0.2s,background 0.2s,border-color 0.2s;
+  display:flex;flex-direction:column;gap:16px;
+}
+.card:hover{
+  transform:translateY(-4px);
+  background:rgba(255,255,255,0.08);
+  border-color:rgba(0,168,150,0.4);
+}
+.card-icon{font-size:36px;line-height:1;}
+.card-title{font-size:19px;font-weight:800;letter-spacing:-0.3px;}
+.card-desc{font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;}
+.card-tag{
+  display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;
+  border-radius:20px;letter-spacing:0.3px;margin-top:auto;align-self:flex-start;
+}
+.tag-mobile{background:rgba(0,168,150,0.15);color:#00A896;}
+.tag-pc{background:rgba(26,95,158,0.2);color:#60A5FA;}
+.tag-prod{background:rgba(192,57,43,0.15);color:#F87171;}
+
+.stats{
+  display:flex;justify-content:center;gap:40px;padding:0 24px 48px;
+  flex-wrap:wrap;
+}
+.stat{text-align:center;}
+.stat-number{font-size:36px;font-weight:900;color:#00A896;letter-spacing:-1px;}
+.stat-label{font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;}
+
+.features{
+  background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.06);
+  padding:48px 24px;text-align:center;
+}
+.features-title{font-size:15px;font-weight:700;color:rgba(255,255,255,0.4);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:28px;}
+.features-grid{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:700px;margin:0 auto;
+}
+.feature{
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px;padding:8px 16px;font-size:13px;color:rgba(255,255,255,0.6);
+}
+
+footer{
+  margin-top:auto;padding:24px;text-align:center;
+  font-size:12px;color:rgba(255,255,255,0.2);
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo">
+    <div class="logo-icon">✦</div>
+    <div class="logo-name">VisitePro <span class="badge">DÉMO</span></div>
+  </div>
+  <p class="tagline">Application de gestion des visites de chantiers<br/>pour les entreprises de nettoyage & facility services</p>
+  <p class="subtitle">Cleaning & Facility Services — Version de démonstration</p>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-number">6</div>
+    <div class="stat-label">Gestionnaires</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">15</div>
+    <div class="stat-label">Techniciennes</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">20</div>
+    <div class="stat-label">Chantiers</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">39</div>
+    <div class="stat-label">Visites</div>
+  </div>
+</div>
+
+<div class="cards">
+  <a href="visitepro_DEMO_PC.html" class="card">
+    <div class="card-icon">🖥️</div>
+    <div class="card-title">Version PC</div>
+    <div class="card-desc">Interface optimisée pour ordinateur avec sidebar de navigation, grille multi-colonnes et grand écran.</div>
+    <span class="card-tag tag-pc">Recommandé pour démo</span>
+  </a>
+
+  <a href="visitepro_DEMO.html" class="card">
+    <div class="card-icon">📱</div>
+    <div class="card-title">Version Mobile</div>
+    <div class="card-desc">Interface optimisée pour smartphone. Navigation en bas d'écran, conçue pour une utilisation sur le terrain.</div>
+    <span class="card-tag tag-mobile">Optimisé GSM</span>
+  </a>
+
+  <a href="visitepro2_dashboard.html" class="card">
+    <div class="card-icon">⚙️</div>
+    <div class="card-title">Version Production</div>
+    <div class="card-desc">Application complète avec vos propres données. Import/export, PDF, gestion complète des chantiers.</div>
+    <span class="card-tag tag-prod">Données réelles</span>
+  </a>
+</div>
+
+<div class="features">
+  <div class="features-title">Fonctionnalités incluses dans la démo</div>
+  <div class="features-grid">
+    <div class="feature">🔴 Tableau de bord priorités</div>
+    <div class="feature">🔍 Recherche instantanée</div>
+    <div class="feature">📋 Fiches chantier complètes</div>
+    <div class="feature">🕐 Historique des visites</div>
+    <div class="feature">✍️ Enregistrement contrôles</div>
+    <div class="feature">📍 Passages terrain</div>
+    <div class="feature">👷 Gestion techniciennes</div>
+    <div class="feature">👤 Gestion gestionnaires</div>
+    <div class="feature">📊 Export planning Excel</div>
+    <div class="feature">📄 Génération PDF</div>
+    <div class="feature">📅 Avancement trimestriel</div>
+    <div class="feature">🗺️ GPS intégré</div>
+  </div>
+</div>
+
+<footer>
+  VisitePro — Application de gestion des visites · Données fictives à des fins de démonstration
+</footer>
+
+</body>
+</html>
