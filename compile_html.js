@@ -12,7 +12,7 @@ function compileHtml(inputFile) {
   
   // Only transform JSX → JS, keep modern ES6+ as-is (modern browsers support it)
   const result = babel.transformSync(jsxCode, {
-    presets: [['@babel/preset-react', {}]],
+    presets: [['@babel/preset-react', { runtime: 'classic' }]],
     compact: true
   });
   
@@ -27,10 +27,6 @@ function compileHtml(inputFile) {
   const newSize = Buffer.byteLength(newHtml, 'utf8');
   console.log(`${inputFile.split('/').pop()}: ${Math.round(origSize/1024)}KB -> ${Math.round(newSize/1024)}KB (saved ${Math.round((origSize-newSize)/1024)}KB inline, +800KB Babel removed from network)`);
 }
-
-// Restore originals from git first, then compile
-const { execSync } = require('child_process');
-execSync('git restore visitepro_DEMO_PC.html visitepro_DEMO-3.html visitepro2_dashboard-33.html', { cwd: '/home/user/visitz' });
 
 compileHtml('/home/user/visitz/visitepro_DEMO_PC.html');
 compileHtml('/home/user/visitz/visitepro_DEMO-3.html');
