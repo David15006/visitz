@@ -1,6 +1,13 @@
 /**
  * GameConfig.js
- * Constantes globales du jeu.
+ * Constantes globales du jeu — source unique de vérité pour tous les paramètres.
+ *
+ * ARCHITECTURE MULTIJOUEUR (préparation) :
+ *  - Toutes les constantes de gameplay sont ici → facile à synchroniser côté serveur
+ *  - Les événements de jeu transitent par `game.events` (bus global Phaser)
+ *  - NetworkBridge (src/network/NetworkBridge.js) écoute ce bus et sérialise
+ *  - Pour activer : `window.__network = new NetworkBridge('wss://…')`
+ *  - Les entités ont un `playerId` / `entityId` prêt pour identification réseau
  */
 
 export const GameConfig = {

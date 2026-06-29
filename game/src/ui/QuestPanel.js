@@ -34,7 +34,8 @@ export class QuestPanel {
     quests.setOnChange(q => this._onQuestComplete(q));
 
     // Repositionner si la caméra change (redimensionnement)
-    scene.scale?.on('resize', () => this._reposition());
+    this._resizeFn = () => this._reposition();
+    scene.scale?.on('resize', this._resizeFn);
   }
 
   // ── Construction ─────────────────────────────────────────────────────────────
@@ -174,6 +175,13 @@ export class QuestPanel {
   // ── Nettoyage ─────────────────────────────────────────────────────────────────
 
   destroy() {
+    if (this._resizeFn) {
+      this._scene.scale?.off('resize', this._resizeFn);
+      this._resizeFn = null;
+    }
+    // Déconnecter le callback du QuestSystem
+    this._quests?.setOnChange(null);
     this._container?.destroy();
+    this._container = null;
   }
 }

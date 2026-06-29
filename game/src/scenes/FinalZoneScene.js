@@ -252,6 +252,15 @@ export class FinalZoneScene extends Phaser.Scene {
     });
   }
 
+  // ── Nettoyage ─────────────────────────────────────────────────────────────────
+
+  shutdown() {
+    this._questPanel?.destroy();
+    this._questPanel = null;
+    this._audio?.stop();
+    this._bossHPBar?.destroy();
+  }
+
   _exitScene() {
     this._audio?.stop();
     this.cameras.main.fadeOut(500, 0, 0, 0);
@@ -374,9 +383,9 @@ export class FinalZoneScene extends Phaser.Scene {
     this._bossHPBar?.hide();
     this._audio?.stop();
 
-    // Éliminer tous les sbires
-    this._rats.forEach(r => { try { r.destroy(); } catch (e) {} });
-    this._infected.forEach(z => { try { z.destroy(); } catch (e) {} });
+    // Éliminer tous les sbires (guard isDead avant destroy pour éviter double-destroy)
+    this._rats.forEach(r => { if (!r.isDead && r.active) r.destroy(); });
+    this._infected.forEach(z => { if (!z.isDead && z.active) z.destroy(); });
     this._rats     = [];
     this._infected = [];
 
@@ -495,10 +504,20 @@ export class FinalZoneScene extends Phaser.Scene {
     this._player.update(time, delta);
     this._playerHUD.update();
 
-    this._rats.forEach(r => { if (!r.isDead) r.update(delta, this._player); });
-    this._infected.forEach(z => { if (!z.isDead) z.update(delta, this._player); });
-    this._rats     = this._rats.filter(r => !r.isDead);
-    this._infected = this._infected.filter(z => !z.isDead);
+    // Mise à jour + nettoyage in-place (évite alloc tableau chaque frame)
+    let rAlive = 0;
+    for (let i = 0; i < this._rats.length; i++) {
+      const r = this._rats[i];
+      if (!r.isDead) { r.update(delta, this._player); this._rats[rAlive++] = r; }
+    }
+    this._rats.length = rAlive;
+
+    let zAlive = 0;
+    for (let i = 0; i < this._infected.length; i++) {
+      const z = this._infected[i];
+      if (!z.isDead) { z.update(delta, this._player); this._infected[zAlive++] = z; }
+    }
+    this._infected.length = zAlive;
 
     if (this._boss) {
       if (this._boss.isDead || !this._boss.active) {

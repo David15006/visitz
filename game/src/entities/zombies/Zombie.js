@@ -72,8 +72,10 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
   // ── Accesseurs ──────────────────────────────────────────────────────────────
 
-  get isDead()  { return this._isDead; }
+  get isDead()   { return this._isDead; }
   get zombieId() { return this._id; }
+  /** Alias unifié pour identification réseau (NetworkBridge) */
+  get entityId() { return this._id; }
 
   setWorldItems(group) { this._worldItems = group; }
 

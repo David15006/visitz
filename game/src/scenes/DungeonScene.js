@@ -298,6 +298,15 @@ export class DungeonScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => this._exitDungeon());
   }
 
+  // ── Nettoyage ─────────────────────────────────────────────────────────────────
+
+  shutdown() {
+    this._questPanel?.destroy();
+    this._questPanel = null;
+    this._audio?.stop();
+    this._bossAudio?.stop();
+  }
+
   // ── Boucle principale ─────────────────────────────────────────────────────────
 
   update(time, delta) {
@@ -310,10 +319,20 @@ export class DungeonScene extends Phaser.Scene {
     this._levers.forEach(({ lever }) => lever.update(this._player));
     this._handleLeverInput();
 
-    this._rats.forEach(r => { if (!r.isDead) r.update(delta, this._player); });
-    this._infected.forEach(z => { if (!z.isDead) z.update(delta, this._player); });
-    this._rats     = this._rats.filter(r => !r.isDead);
-    this._infected = this._infected.filter(z => !z.isDead);
+    // Mise à jour + nettoyage paresseux (évite alloc tableau chaque frame)
+    let rAlive = 0;
+    for (let i = 0; i < this._rats.length; i++) {
+      const r = this._rats[i];
+      if (!r.isDead) { r.update(delta, this._player); this._rats[rAlive++] = r; }
+    }
+    this._rats.length = rAlive;
+
+    let zAlive = 0;
+    for (let i = 0; i < this._infected.length; i++) {
+      const z = this._infected[i];
+      if (!z.isDead) { z.update(delta, this._player); this._infected[zAlive++] = z; }
+    }
+    this._infected.length = zAlive;
 
     if (this._ratKing) {
       if (this._ratKing.isDead || !this._ratKing.active) {
@@ -326,7 +345,6 @@ export class DungeonScene extends Phaser.Scene {
 
     this._updatePoison(delta);
     this._checkRoomTriggers();
-    this._checkExitPortal();
   }
 
   // ── Leviers ──────────────────────────────────────────────────────────────────
@@ -657,10 +675,6 @@ export class DungeonScene extends Phaser.Scene {
       );
       if (dist < 60) this._exitDungeon();
     });
-  }
-
-  _checkExitPortal() {
-    // Géré via keyboard event ci-dessus
   }
 
   // ── Spawn ennemis ─────────────────────────────────────────────────────────────

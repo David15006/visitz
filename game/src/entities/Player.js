@@ -22,9 +22,17 @@ const KEY = Phaser.Input.Keyboard.KeyCodes;
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
 
-  /** @param {Phaser.Scene} scene */
-  constructor(scene, x, y) {
+  /**
+   * @param {Phaser.Scene} scene
+   * @param {number}       x
+   * @param {number}       y
+   * @param {string}       [playerId]  Identifiant réseau (multijoueur futur)
+   */
+  constructor(scene, x, y, playerId = 'local') {
     super(scene, x, y, 'p_idle_0');
+
+    /** Identifiant unique — utilisé par NetworkBridge en multijoueur */
+    this.playerId = playerId;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -61,10 +69,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Invincibilité après coup reçu
     this._iframes = 0;
 
-    // Attaque au clic gauche
-    scene.input.on('pointerdown', (ptr) => {
-      if (ptr.leftButtonDown()) this._tryAttack();
-    });
+    // Attaque au clic gauche (référence stockée pour nettoyage)
+    this._attackClickFn = (ptr) => { if (ptr.leftButtonDown()) this._tryAttack(); };
+    scene.input.on('pointerdown', this._attackClickFn);
 
     // Registre des animations Phaser (multi-texture)
     this._registerAnimations(scene);
@@ -294,6 +301,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       arc:   weapon.attackArc,
       damage: weapon.damage,
     };
+  }
+
+  // ── Nettoyage ──────────────────────────────────────────────────────────────
+
+  destroy(fromScene) {
+    // Supprimer le listener clic pour éviter les fuites si scène redémarrée
+    if (this._attackClickFn && this.scene?.input) {
+      this.scene.input.off('pointerdown', this._attackClickFn);
+      this._attackClickFn = null;
+    }
+    this._pickupHint?.destroy();
+    super.destroy(fromScene);
   }
 
   /** Affiche l'arc d'attaque sur le monde, puis le fait disparaître */

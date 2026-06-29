@@ -425,7 +425,9 @@ export class GameScene extends Phaser.Scene {
 
     // Portail scintillant à la place
     const portal = this.add.graphics().setDepth(4);
+    this._portalGfx = portal;
     const drawPortal = () => {
+      if (!portal.scene) return;          // guard: portal détruit
       portal.clear();
       const t     = this.time.now;
       const alpha = 0.6 + 0.25 * Math.sin(t / 250);
@@ -436,6 +438,7 @@ export class GameScene extends Phaser.Scene {
       portal.lineStyle(2, 0xffffff, alpha);
       portal.strokeCircle(x, y, 28);
     };
+    this._portalDrawFn = drawPortal;
     this.events.on('update', drawPortal);
 
     // Label
@@ -455,10 +458,11 @@ export class GameScene extends Phaser.Scene {
   // ── Système de quêtes ─────────────────────────────────────────────────────
 
   _initQuests() {
-    // Créer ou réutiliser le singleton global
-    if (!window.__quests) {
-      window.__quests = new QuestSystem(this.game);
+    // Détruire l'ancienne instance si le joueur recommence une partie
+    if (window.__quests) {
+      window.__quests.destroy();
     }
+    window.__quests  = new QuestSystem(this.game);
     this._questPanel = new QuestPanel(this, window.__quests);
   }
 
@@ -476,6 +480,18 @@ export class GameScene extends Phaser.Scene {
         this.scene.start('MainMenuScene');
       });
     });
+  }
+
+  // ── Nettoyage ─────────────────────────────────────────────────────────────
+
+  shutdown() {
+    // Supprimer le listener du portail pour éviter les fuites mémoire
+    if (this._portalDrawFn) {
+      this.events.off('update', this._portalDrawFn);
+      this._portalDrawFn = null;
+    }
+    this._questPanel?.destroy();
+    this._questPanel = null;
   }
 
   // ── Boucle principale ─────────────────────────────────────────────────────
