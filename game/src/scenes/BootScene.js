@@ -47,6 +47,10 @@ export class BootScene extends Phaser.Scene {
     // Survivant PNJ
     this._createSurvivorTexture();
 
+    // Boss spécial + clé des égouts
+    this._createBossFrames();
+    this._createSewerKeyTextures();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -779,6 +783,203 @@ export class BootScene extends Phaser.Scene {
     ig.fillStyle(0xff9999, 0.35);
     ig.fillEllipse(8, 8, 5, 3);
     ig.generateTexture('icon_meat', 24, 24);
+    ig.destroy();
+  }
+
+  // ── Boss spécial ───────────────────────────────────────────────────────────
+
+  /**
+   * Génère les frames du boss : corps massif violet/pourpre, yeux rouges,
+   * piques d'os sur les épaules, posture courbée intimidante.
+   * Taille 40×48 (même que zombies), scalée 1.5× en jeu.
+   */
+  _createBossFrames() {
+    const walkLegs = [
+      { ll: { x: -5, y: -4 }, rl: { x:  4, y:  4 } },
+      { ll: { x:  0, y:  0 }, rl: { x:  0, y:  0 } },
+      { ll: { x:  5, y:  4 }, rl: { x: -4, y: -4 } },
+      { ll: { x:  0, y:  0 }, rl: { x:  0, y:  0 } },
+    ];
+    walkLegs.forEach((leg, i) =>
+      this._drawBossFrame(`boss_walk_${i}`, leg.ll, leg.rl, false)
+    );
+    this._drawBossFrame('boss_atk_0', { x: 0, y: 0 }, { x: 0, y: 0 }, true);
+    this._drawBossFrame('boss_atk_1', { x:-2, y: 1 }, { x: 2, y: 1 }, true);
+  }
+
+  _drawBossFrame(key, ll, rl, attacking) {
+    const gfx = this.make.graphics({ add: false });
+    const cx  = 20;
+
+    // Ombre élargie (boss est grand)
+    gfx.fillStyle(0x000000, 0.3);
+    gfx.fillEllipse(cx, 46, 36, 10);
+
+    // Jambes (sombres, massives)
+    gfx.fillStyle(0x1a0028, 1);
+    gfx.fillEllipse(cx - 8 + ll.x, 37 + ll.y, 13, 15);
+    gfx.fillEllipse(cx + 8 + rl.x, 37 + rl.y, 13, 15);
+    // Reflet jambes
+    gfx.fillStyle(0x330044, 0.5);
+    gfx.fillEllipse(cx - 7 + ll.x, 33 + ll.y, 7, 6);
+    gfx.fillEllipse(cx + 9 + rl.x, 33 + rl.y, 7, 6);
+
+    // Corps (violet foncé, large)
+    gfx.fillStyle(0x3a0055, 1);
+    gfx.fillRoundedRect(cx - 13, 18, 26, 20, 5);
+    // Ombre corps
+    gfx.fillStyle(0x1a0030, 0.6);
+    gfx.fillRoundedRect(cx + 5, 19, 8, 18, 3);
+    // Reflet corps
+    gfx.fillStyle(0x660088, 0.3);
+    gfx.fillRoundedRect(cx - 12, 20, 8, 10, 3);
+
+    // Piques osseux sur les épaules
+    gfx.fillStyle(0xd4c89a, 1);
+    if (attacking) {
+      // Épaules hautes
+      gfx.fillPoints([
+        { x: cx - 14, y: 16 }, { x: cx - 18, y:  8 }, { x: cx - 10, y: 14 },
+      ], true);
+      gfx.fillPoints([
+        { x: cx + 14, y: 16 }, { x: cx + 18, y:  8 }, { x: cx + 10, y: 14 },
+      ], true);
+    } else {
+      gfx.fillPoints([
+        { x: cx - 13, y: 18 }, { x: cx - 17, y: 11 }, { x: cx - 9, y: 17 },
+      ], true);
+      gfx.fillPoints([
+        { x: cx + 13, y: 18 }, { x: cx + 17, y: 11 }, { x: cx + 9, y: 17 },
+      ], true);
+    }
+
+    // Bras (massifs)
+    gfx.fillStyle(0x8b60a0, 1);
+    if (attacking) {
+      gfx.fillEllipse(cx - 16, 18, 11, 16);
+      gfx.fillEllipse(cx + 16, 18, 11, 16);
+      // Griffes
+      gfx.fillStyle(0xd4c89a, 1);
+      gfx.fillPoints([
+        { x: cx - 20, y: 10 }, { x: cx - 22, y: 5 }, { x: cx - 17, y: 9 },
+      ], true);
+      gfx.fillPoints([
+        { x: cx + 20, y: 10 }, { x: cx + 22, y: 5 }, { x: cx + 17, y: 9 },
+      ], true);
+    } else {
+      gfx.fillEllipse(cx - 15, 26, 10, 16);
+      gfx.fillEllipse(cx + 15, 26, 10, 16);
+    }
+
+    // Tête (grande, ronde, sombre)
+    gfx.fillStyle(0x4a006a, 1);
+    gfx.fillCircle(cx, 12, 13);
+    // Ombre tête
+    gfx.fillStyle(0x220033, 0.55);
+    gfx.fillCircle(cx + 3, 14, 9);
+
+    // Cornes (piques osseux sur la tête)
+    gfx.fillStyle(0xd4c89a, 1);
+    gfx.fillPoints([
+      { x: cx - 8, y: 4 }, { x: cx - 11, y: -4 }, { x: cx - 5, y: 3 },
+    ], true);
+    gfx.fillPoints([
+      { x: cx + 8, y: 4 }, { x: cx + 11, y: -4 }, { x: cx + 5, y: 3 },
+    ], true);
+
+    // Yeux rouges luisants (grands)
+    gfx.fillStyle(0xff0000, 1);
+    gfx.fillCircle(cx - 5, 11, 4);
+    gfx.fillCircle(cx + 5, 11, 4);
+    // Centre des yeux
+    gfx.fillStyle(0xff6600, 1);
+    gfx.fillCircle(cx - 5, 11, 2.5);
+    gfx.fillCircle(cx + 5, 11, 2.5);
+    // Reflet yeux
+    gfx.fillStyle(0xffcc00, 0.8);
+    gfx.fillCircle(cx - 4, 10, 1.2);
+    gfx.fillCircle(cx + 6, 10, 1.2);
+
+    // Bouche (cicatrice / dents)
+    gfx.fillStyle(0x110011, 0.9);
+    gfx.fillRect(cx - 5, 17, 10, 3);
+    gfx.fillStyle(0xeeddcc, 0.9);
+    for (let t = 0; t < 4; t++) {
+      gfx.fillRect(cx - 4 + t * 3, 17, 2, 2);
+    }
+
+    gfx.generateTexture(key, 40, 48);
+    gfx.destroy();
+  }
+
+  // ── Clé des Égouts ─────────────────────────────────────────────────────────
+
+  _createSewerKeyTextures() {
+    // Sprite monde : clé rouillée avec aura violette (32×20)
+    const wg = this.make.graphics({ add: false });
+
+    // Aura
+    wg.lineStyle(2, 0xaa00ff, 0.5);
+    wg.strokeEllipse(16, 10, 32, 18);
+
+    // Corps de la clé
+    wg.fillStyle(0x8b6914, 1);
+    wg.fillCircle(8, 10, 7);    // tête
+    wg.fillStyle(0x5c4510, 1);
+    wg.fillCircle(8, 10, 4);    // trou de la tête
+
+    // Tige
+    wg.fillStyle(0x8b6914, 1);
+    wg.fillRect(13, 8, 16, 4);
+
+    // Dents
+    wg.fillRect(22, 12, 3, 4);
+    wg.fillRect(27, 12, 3, 6);
+
+    // Reflet métal
+    wg.fillStyle(0xccaa44, 0.5);
+    wg.fillRect(14, 8, 14, 2);
+    wg.fillCircle(7, 9, 3);
+
+    // Oxydation verte
+    wg.fillStyle(0x226633, 0.4);
+    wg.fillCircle(10, 11, 3);
+    wg.fillRect(18, 9, 4, 2);
+
+    wg.generateTexture('sewer_key_world', 32, 20);
+    wg.destroy();
+
+    // Icône inventaire (24×24)
+    const ig = this.make.graphics({ add: false });
+
+    // Fond transparent
+    ig.fillStyle(0x000000, 0);
+    ig.fillRect(0, 0, 24, 24);
+
+    // Tête de clé
+    ig.fillStyle(0x9b7720, 1);
+    ig.fillCircle(7, 12, 6);
+    ig.fillStyle(0x333333, 1);
+    ig.fillCircle(7, 12, 3);
+
+    // Tige
+    ig.fillStyle(0x9b7720, 1);
+    ig.fillRect(12, 10, 11, 4);
+
+    // Dents
+    ig.fillRect(17, 14, 2, 4);
+    ig.fillRect(21, 14, 2, 5);
+
+    // Reflet
+    ig.fillStyle(0xddcc66, 0.6);
+    ig.fillRect(13, 10, 8, 2);
+    ig.fillCircle(6, 11, 2);
+
+    // Aura violette
+    ig.lineStyle(1, 0xcc00ff, 0.7);
+    ig.strokeCircle(7, 12, 8);
+
+    ig.generateTexture('icon_sewer_key', 24, 24);
     ig.destroy();
   }
 }

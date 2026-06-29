@@ -14,8 +14,10 @@ import { ZombieSpawner }    from '../systems/ZombieSpawner.js';
 import { Kitchen }          from '../systems/Kitchen.js';
 import { Shop }             from '../systems/Shop.js';
 import { SurvivorSpawner }  from '../systems/SurvivorSpawner.js';
+import { BossSpawner }      from '../systems/BossSpawner.js';
 import { HUD }              from '../ui/HUD.js';
 import { PlayerHUD }        from '../ui/PlayerHUD.js';
+import { Notification }     from '../ui/Notification.js';
 import { Bat }              from '../entities/items/Bat.js';
 
 export class GameScene extends Phaser.Scene {
@@ -44,6 +46,10 @@ export class GameScene extends Phaser.Scene {
     this._shop = null;
     /** @type {SurvivorSpawner} */
     this._survivorSpawner = null;
+    /** @type {BossSpawner} */
+    this._bossSpawner = null;
+    /** @type {Notification} */
+    this._notification = null;
 
     // Groupe d'items ramassables du monde
     this._worldItems = null;
@@ -67,6 +73,7 @@ export class GameScene extends Phaser.Scene {
     this._buildKitchen();
     this._buildShop();
     this._buildSurvivors();
+    this._buildBoss();
     this._setupPhysics();
     this._buildReturnKey();
 
@@ -209,6 +216,40 @@ export class GameScene extends Phaser.Scene {
     this._survivorSpawner = new SurvivorSpawner(this, this._player);
   }
 
+  // ── Boss ──────────────────────────────────────────────────────────────────
+
+  _buildBoss() {
+    this._notification = new Notification(this);
+
+    this._bossSpawner = new BossSpawner(
+      this, this._player, this._worldItems,
+      {
+        onBossSpawn: () => {
+          this._notification.show(
+            '⚠  UNE CRÉATURE SPÉCIALE EST APPARUE !',
+            '#ff2200',
+            4000
+          );
+        },
+        onBossKill: () => {
+          this._notification.show(
+            '★  BOSS VAINCU — CLÉ DES ÉGOUTS OBTENUE !',
+            '#cc00ff',
+            5000
+          );
+        },
+      }
+    );
+
+    // Wirer les attaques du joueur vers le boss également
+    this._player.on('attack', (info) => {
+      if (!info) return;
+      this._bossSpawner.handlePlayerAttack(
+        info.x, info.y, info.angle, info.range, info.arc, info.damage
+      );
+    });
+  }
+
   // ── Colliders physiques ────────────────────────────────────────────────────
 
   _setupPhysics() {
@@ -220,6 +261,13 @@ export class GameScene extends Phaser.Scene {
       this._spawner.group,
       this._base.wallsGroup,
       (zombie, wall) => zombie.onWallCollision(wall)
+    );
+
+    // Boss bloqué par les murs + attaque de mur
+    this.physics.add.collider(
+      this._bossSpawner.group,
+      this._base.wallsGroup,
+      (boss, wall) => boss.onWallCollision(wall)
     );
   }
 
@@ -252,6 +300,7 @@ export class GameScene extends Phaser.Scene {
 
     this._dayNight.update(delta);
     this._spawner.update(delta, this._dayNight.isNight);
+    this._bossSpawner?.update(delta, this._dayNight.isNight, this._dayNight.dayCount);
     this._survivorSpawner?.update(delta);
     this._base.update(delta, this._player.x, this._player.y);
     this._kitchen?.update(delta, this._player.inventory);
