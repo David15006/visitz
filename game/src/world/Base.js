@@ -122,7 +122,7 @@ export class Base {
         color: '#ffe066', stroke: '#000000', strokeThickness: 2,
       }).setOrigin(0.5, 0).setDepth(6);
 
-      this._interiors.push({ sprite, label: labelText, action, x, y });
+      this._interiors.push({ sprite, label: labelText, key, action, x, y });
     });
   }
 
@@ -201,13 +201,12 @@ export class Base {
 
   /**
    * Interagit avec l'objet intérieur le plus proche.
-   * @returns {boolean}
+   * @returns {string|null} key de l'objet (ex: 'obj_kitchen') ou null
    */
   interactNear(px, py) {
     const obj = this._nearestInterior(px, py);
-    if (!obj) return false;
-    this._showFeedback(obj.action, px, py, '#aaffff');
-    return true;
+    if (!obj) return null;
+    return obj.key;
   }
 
   isDoorNear(px, py) {

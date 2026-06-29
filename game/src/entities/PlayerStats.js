@@ -17,8 +17,18 @@ export class PlayerStats {
     this.maxStamina = S.MAX_STAMINA;
     this.stamina    = S.MAX_STAMINA;
 
-    // Épuisement : actif quand stamina = 0, levé quand stamina > EXHAUSTED_THRESHOLD
     this.isExhausted = false;
+
+    // Monnaie du joueur
+    this.coins = 0;
+  }
+
+  addCoins(amount)  { this.coins += amount; }
+
+  spendCoins(amount) {
+    if (this.coins < amount) return false;
+    this.coins -= amount;
+    return true;
   }
 
   /**

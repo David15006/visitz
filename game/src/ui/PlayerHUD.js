@@ -48,9 +48,9 @@ export class PlayerHUD {
   _buildBars() {
     const gfx = this._scene.add.graphics().setScrollFactor(0).setDepth(DEPTH);
 
-    // Fond commun des deux barres
+    // Fond commun des barres + pièces
     gfx.fillStyle(0x000000, 0.55);
-    gfx.fillRoundedRect(10, HEIGHT - 96, BAR_W + 60, 52, 6);
+    gfx.fillRoundedRect(10, HEIGHT - 96, BAR_W + 60, 68, 6);
 
     // Icônes
     this._scene.add.text(15, HP_Y, '❤', {
@@ -81,6 +81,15 @@ export class PlayerHUD {
 
     this._stText = this._scene.add.text(BAR_X + BAR_W + 6, ST_Y, '', {
       fontFamily: 'monospace', fontSize: '11px', color: '#aaffbb',
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH);
+
+    // Pièces
+    this._scene.add.text(15, HEIGHT - 38, '$', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#ffdd33',
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH);
+
+    this._coinsText = this._scene.add.text(BAR_X, HEIGHT - 38, '0 pieces', {
+      fontFamily: 'monospace', fontSize: '12px', color: '#ffdd88',
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH);
   }
 
@@ -116,6 +125,13 @@ export class PlayerHUD {
         .setDepth(DEPTH + 1)
         .setVisible(false);
       this._slotIcons.push(icon);
+
+      // Quantité (items stackables)
+      const qty = this._scene.add.text(sx + SLOT_SIZE - 3, INV_Y + SLOT_SIZE / 2 - 3, '', {
+        fontFamily: 'monospace', fontSize: '9px', color: '#ffffff',
+        stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(1, 1).setScrollFactor(0).setDepth(DEPTH + 2);
+      this._slotKeys.push(qty);
 
       // Chiffre du slot
       this._scene.add.text(sx + 3, INV_Y - SLOT_SIZE / 2 + 2, String(i + 1), {
@@ -169,6 +185,9 @@ export class PlayerHUD {
     const st = stats.staminaPercent;
     const stColor = st > 0.5 ? 0x44dd55 : st > 0.25 ? 0xdddd22 : 0xff8800;
     this._stBar.setFillStyle(stColor);
+
+    // Pièces
+    this._coinsText.setText(`${stats.coins} pieces`);
   }
 
   _updateInventorySlots(inv) {
@@ -189,6 +208,14 @@ export class PlayerHUD {
         icon.setTexture(item.icon).setVisible(true);
       } else {
         icon.setVisible(false);
+      }
+
+      // Quantité (items stackables)
+      const qty = this._slotKeys[i];
+      if (item?.stackable && item.quantity > 1) {
+        qty.setText(String(item.quantity)).setVisible(true);
+      } else {
+        qty.setVisible(false);
       }
     });
   }

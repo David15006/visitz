@@ -30,16 +30,61 @@ export class Inventory {
   // ── Modification ──────────────────────────────────────────────────────────
 
   /**
-   * Ajoute un item dans le premier slot vide.
+   * Ajoute un item.  Les items stackables s'empilent sur un slot existant.
    * @param {Item} item
    * @returns {number} Index du slot utilisé, ou -1 si inventaire plein
    */
   add(item) {
+    // Empilage pour les items stackables
+    if (item.stackable) {
+      for (let i = 0; i < this._size; i++) {
+        if (this._slots[i]?.key === item.key) {
+          this._slots[i].quantity += item.quantity ?? 1;
+          this._notify();
+          return i;
+        }
+      }
+    }
+    // Nouveau slot
     const idx = this._slots.indexOf(null);
     if (idx === -1) return -1;
     this._slots[idx] = item;
     this._notify();
     return idx;
+  }
+
+  /** Nombre total d'unités d'une clé d'item dans l'inventaire. */
+  countByKey(key) {
+    let total = 0;
+    for (const slot of this._slots) {
+      if (slot?.key === key) total += slot.quantity ?? 1;
+    }
+    return total;
+  }
+
+  /**
+   * Retire `count` unités d'un item identifié par sa clé.
+   * @returns {boolean} true si le retrait complet a réussi
+   */
+  removeByKey(key, count = 1) {
+    let remaining = count;
+    for (let i = 0; i < this._size && remaining > 0; i++) {
+      if (!this._slots[i] || this._slots[i].key !== key) continue;
+      const toRemove = Math.min(remaining, this._slots[i].quantity ?? 1);
+      this._slots[i].quantity = (this._slots[i].quantity ?? 1) - toRemove;
+      remaining -= toRemove;
+      if ((this._slots[i].quantity ?? 0) <= 0) this._slots[i] = null;
+    }
+    this._notify();
+    return remaining === 0;
+  }
+
+  /** Retourne le premier slot contenant un item du type donné. */
+  findFirstByType(type) {
+    for (let i = 0; i < this._size; i++) {
+      if (this._slots[i]?.type === type) return { item: this._slots[i], index: i };
+    }
+    return null;
   }
 
   /**

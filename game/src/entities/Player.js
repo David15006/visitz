@@ -301,7 +301,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const gfx = this.scene.add.graphics().setDepth(15);
 
     // Couleur selon l'arme
-    gfx.lineStyle(4, 0xffe566, 0.85);
+    gfx.lineStyle(4, weapon.arcColor ?? 0xffe566, 0.85);
     gfx.beginPath();
     gfx.arc(
       this.x, this.y,

@@ -3,17 +3,20 @@
  * Scène principale — orchestre tous les systèmes du jeu.
  */
 
-import { GameConfig }    from '../config/GameConfig.js';
-import { Player }        from '../entities/Player.js';
-import { WorldMap }      from '../world/WorldMap.js';
-import { Base }          from '../world/Base.js';
-import { DayNightCycle } from '../systems/DayNightCycle.js';
-import { AudioManager }  from '../systems/AudioManager.js';
-import { SoundManager }  from '../systems/SoundManager.js';
-import { ZombieSpawner } from '../systems/ZombieSpawner.js';
-import { HUD }           from '../ui/HUD.js';
-import { PlayerHUD }     from '../ui/PlayerHUD.js';
-import { Bat }           from '../entities/items/Bat.js';
+import { GameConfig }       from '../config/GameConfig.js';
+import { Player }           from '../entities/Player.js';
+import { WorldMap }         from '../world/WorldMap.js';
+import { Base }             from '../world/Base.js';
+import { DayNightCycle }    from '../systems/DayNightCycle.js';
+import { AudioManager }     from '../systems/AudioManager.js';
+import { SoundManager }     from '../systems/SoundManager.js';
+import { ZombieSpawner }    from '../systems/ZombieSpawner.js';
+import { Kitchen }          from '../systems/Kitchen.js';
+import { Shop }             from '../systems/Shop.js';
+import { SurvivorSpawner }  from '../systems/SurvivorSpawner.js';
+import { HUD }              from '../ui/HUD.js';
+import { PlayerHUD }        from '../ui/PlayerHUD.js';
+import { Bat }              from '../entities/items/Bat.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -35,6 +38,12 @@ export class GameScene extends Phaser.Scene {
     this._spawner = null;
     /** @type {Base} */
     this._base = null;
+    /** @type {Kitchen} */
+    this._kitchen = null;
+    /** @type {Shop} */
+    this._shop = null;
+    /** @type {SurvivorSpawner} */
+    this._survivorSpawner = null;
 
     // Groupe d'items ramassables du monde
     this._worldItems = null;
@@ -55,6 +64,9 @@ export class GameScene extends Phaser.Scene {
     this._buildHUDs();
     this._buildAudio();
     this._buildZombies();
+    this._buildKitchen();
+    this._buildShop();
+    this._buildSurvivors();
     this._setupPhysics();
     this._buildReturnKey();
 
@@ -179,6 +191,24 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ── Cuisine ───────────────────────────────────────────────────────────────
+
+  _buildKitchen() {
+    this._kitchen = new Kitchen(this);
+  }
+
+  // ── Boutique ──────────────────────────────────────────────────────────────
+
+  _buildShop() {
+    this._shop = new Shop(this);
+  }
+
+  // ── Survivants ────────────────────────────────────────────────────────────
+
+  _buildSurvivors() {
+    this._survivorSpawner = new SurvivorSpawner(this, this._player);
+  }
+
   // ── Colliders physiques ────────────────────────────────────────────────────
 
   _setupPhysics() {
@@ -196,7 +226,11 @@ export class GameScene extends Phaser.Scene {
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
-    this.input.keyboard.once('keydown-ESC', () => {
+    this.input.keyboard.on('keydown-ESC', () => {
+      // Priorité : fermer les UIs ouvertes avant de quitter
+      if (this._kitchen?.isOpen) { this._kitchen.close(); return; }
+      if (this._shop?.isOpen)    { this._shop.close();    return; }
+
       if (this._audio) this._audio.stop();
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -208,14 +242,23 @@ export class GameScene extends Phaser.Scene {
   // ── Boucle principale ─────────────────────────────────────────────────────
 
   update(time, delta) {
-    this._player.update(time, delta);
+    const uiOpen = this._kitchen?.isOpen || this._shop?.isOpen;
+
+    // Geler les inputs du joueur si une UI est ouverte
+    if (!uiOpen) {
+      this._player.update(time, delta);
+      this._handleBaseInput();
+    }
+
     this._dayNight.update(delta);
     this._spawner.update(delta, this._dayNight.isNight);
+    this._survivorSpawner?.update(delta);
     this._base.update(delta, this._player.x, this._player.y);
+    this._kitchen?.update(delta, this._player.inventory);
+    this._shop?.update();
     this._hud.update();
     this._playerHUD.update();
     this._sound?.resume();
-    this._handleBaseInput();
   }
 
   _handleBaseInput() {
@@ -233,7 +276,12 @@ export class GameScene extends Phaser.Scene {
 
     // E → objet intérieur (si pas d'item monde à portée)
     if (Phaser.Input.Keyboard.JustDown(keys.E) && !this._player.nearbyItem) {
-      this._base.interactNear(this._player.x, this._player.y);
+      const objKey = this._base.interactNear(this._player.x, this._player.y);
+      if (objKey === 'obj_kitchen') {
+        this._kitchen.open(this._player.inventory);
+      } else if (objKey === 'obj_shop') {
+        this._shop.open(this._player.stats, this._player.inventory);
+      }
     }
   }
 }

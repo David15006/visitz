@@ -38,6 +38,15 @@ export class BootScene extends Phaser.Scene {
     this._createDoorTextures();
     this._createInteriorTextures();
 
+    // Nourriture
+    this._createFoodTextures();
+
+    // Nouvelles armes
+    this._createWeaponTextures();
+
+    // Survivant PNJ
+    this._createSurvivorTexture();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -276,6 +285,195 @@ export class BootScene extends Phaser.Scene {
     gfx.lineBetween(12, 5, 12, 28);
     gfx.lineBetween(7, 14, 17, 14);
     gfx.generateTexture('grave', 24, 36);
+    gfx.destroy();
+  }
+
+  // ── Nourriture ────────────────────────────────────────────────────────────
+
+  _createFoodTextures() {
+    // Steak (24×24) : viande grillée
+    const steak = this.make.graphics({ add: false });
+    steak.fillStyle(0x7a2200, 1);
+    steak.fillEllipse(12, 13, 20, 16);
+    steak.fillStyle(0xaa3300, 0.6);
+    steak.fillEllipse(10, 11, 12, 8);
+    steak.fillStyle(0xcc5522, 0.4);
+    steak.fillEllipse(8, 9, 7, 5);
+    steak.fillStyle(0x553311, 0.5);
+    steak.fillRect(6, 18, 12, 3);
+    steak.generateTexture('icon_steak', 24, 24);
+    steak.destroy();
+
+    // Soupe (24×24) : bol avec vapeur
+    const soupe = this.make.graphics({ add: false });
+    soupe.fillStyle(0x885533, 1);
+    soupe.fillEllipse(12, 17, 20, 10);
+    soupe.fillStyle(0x6b3d22, 1);
+    soupe.fillRect(2, 17, 20, 5);
+    soupe.fillStyle(0xcc7744, 0.8);
+    soupe.fillEllipse(12, 16, 18, 8);
+    soupe.fillStyle(0xddaaaa, 0.4);
+    soupe.fillEllipse(12, 15, 10, 4);
+    // Vapeur
+    soupe.lineStyle(1, 0xaaaaaa, 0.5);
+    soupe.lineBetween(8, 9, 9, 4);
+    soupe.lineBetween(12, 8, 12, 3);
+    soupe.lineBetween(16, 9, 15, 4);
+    soupe.generateTexture('icon_soupe', 24, 24);
+    soupe.destroy();
+
+    // Brochettes (24×24) : bâton avec morceaux de viande
+    const broch = this.make.graphics({ add: false });
+    broch.lineStyle(2, 0x7a5a2a, 1);
+    broch.lineBetween(3, 21, 21, 3);
+    broch.fillStyle(0xcc3333, 1);
+    broch.fillCircle(7, 17, 3);
+    broch.fillCircle(12, 12, 3);
+    broch.fillCircle(17, 7, 3);
+    broch.fillStyle(0xff6655, 0.5);
+    broch.fillCircle(6, 16, 1.5);
+    broch.fillCircle(11, 11, 1.5);
+    broch.generateTexture('icon_brochette', 24, 24);
+    broch.destroy();
+
+    // Tarte de viande (24×24)
+    const tarte = this.make.graphics({ add: false });
+    tarte.fillStyle(0xcc9944, 1);
+    tarte.fillEllipse(12, 16, 22, 14);
+    tarte.fillStyle(0xddbb66, 1);
+    tarte.fillEllipse(12, 13, 20, 8);
+    tarte.fillStyle(0xaa3322, 0.7);
+    tarte.fillEllipse(12, 12, 14, 6);
+    // Croûte
+    tarte.fillStyle(0xcc9944, 1);
+    tarte.fillRect(2, 14, 20, 4);
+    tarte.lineStyle(1, 0xee8833, 0.6);
+    tarte.lineBetween(4, 12, 20, 12);
+    tarte.generateTexture('icon_tarte', 24, 24);
+    tarte.destroy();
+  }
+
+  // ── Nouvelles armes ───────────────────────────────────────────────────────
+
+  _createWeaponTextures() {
+    // Lance / Spear (24×24)
+    const lance = this.make.graphics({ add: false });
+    lance.lineStyle(2, 0x8b6914, 1);
+    lance.lineBetween(3, 21, 17, 7);
+    lance.fillStyle(0xcccccc, 1);
+    lance.fillPoints([
+      { x: 17, y: 7 }, { x: 22, y: 2 }, { x: 21, y: 8 },
+    ], true);
+    lance.fillStyle(0x8b6914, 1);
+    lance.fillRect(2, 19, 5, 3);
+    lance.generateTexture('icon_lance', 24, 24);
+    lance.destroy();
+
+    // Pistolet (24×24)
+    const pistol = this.make.graphics({ add: false });
+    pistol.fillStyle(0x444444, 1);
+    pistol.fillRect(4, 8, 14, 8);
+    pistol.fillRect(16, 7, 5, 5);  // canon
+    pistol.fillRect(9, 14, 6, 7);  // crosse
+    pistol.fillStyle(0x666666, 1);
+    pistol.fillRect(5, 9, 4, 4);   // reflet
+    pistol.fillStyle(0x222222, 1);
+    pistol.fillRect(10, 15, 2, 5); // détente
+    pistol.generateTexture('icon_pistol', 24, 24);
+    pistol.destroy();
+
+    // Fusil à pompe (24×24)
+    const shotgun = this.make.graphics({ add: false });
+    shotgun.fillStyle(0x7a5a2a, 1);
+    shotgun.fillRect(2, 11, 20, 5);  // fût
+    shotgun.fillStyle(0x444444, 1);
+    shotgun.fillRect(2, 10, 20, 3);  // canons
+    shotgun.fillRect(2, 13, 20, 3);
+    shotgun.fillStyle(0x7a5a2a, 1);
+    shotgun.fillRect(15, 14, 5, 7);  // crosse
+    shotgun.fillStyle(0x555555, 1);
+    shotgun.fillRect(20, 10, 3, 6);  // bouche
+    shotgun.generateTexture('icon_shotgun', 24, 24);
+    shotgun.destroy();
+
+    // Fusil d'assaut (24×24)
+    const ar = this.make.graphics({ add: false });
+    ar.fillStyle(0x333333, 1);
+    ar.fillRect(2, 10, 22, 5);
+    ar.fillRect(16, 14, 5, 7);  // crosse
+    ar.fillStyle(0x555555, 1);
+    ar.fillRect(2, 9, 22, 3);   // canon
+    ar.fillRect(9, 14, 4, 5);   // chargeur
+    ar.fillStyle(0x222222, 1);
+    ar.fillRect(5, 13, 3, 3);   // poignée
+    ar.generateTexture('icon_ar', 24, 24);
+    ar.destroy();
+
+    // Lance-flammes (24×24)
+    const ft = this.make.graphics({ add: false });
+    ft.fillStyle(0x555555, 1);
+    ft.fillRect(2, 10, 16, 6);   // corps
+    ft.fillRect(6, 14, 5, 8);    // réservoir
+    ft.fillStyle(0x777777, 1);
+    ft.fillRect(16, 11, 7, 3);   // lance-flamme
+    // Flamme
+    ft.fillStyle(0xff4400, 0.9);
+    ft.fillEllipse(21, 12, 8, 7);
+    ft.fillStyle(0xff8800, 0.7);
+    ft.fillEllipse(22, 12, 5, 5);
+    ft.fillStyle(0xffcc00, 0.5);
+    ft.fillEllipse(23, 12, 3, 3);
+    ft.generateTexture('icon_flamethrower', 24, 24);
+    ft.destroy();
+  }
+
+  // ── Survivant PNJ ─────────────────────────────────────────────────────────
+
+  _createSurvivorTexture() {
+    const gfx = this.make.graphics({ add: false });
+    const cx  = 20;
+
+    // Ombre
+    gfx.fillStyle(0x000000, 0.2);
+    gfx.fillEllipse(cx, 46, 26, 8);
+
+    // Jambes
+    gfx.fillStyle(0x4a4a6a, 1);
+    gfx.fillEllipse(cx - 6, 37, 10, 13);
+    gfx.fillEllipse(cx + 6, 37, 10, 13);
+
+    // Corps (chemise orange)
+    gfx.fillStyle(0xdd6611, 1);
+    gfx.fillRoundedRect(cx - 10, 20, 20, 18, 4);
+    gfx.fillStyle(0xaa4400, 0.5);
+    gfx.fillRoundedRect(cx + 4, 21, 6, 16, 3);
+
+    // Bras
+    gfx.fillStyle(0xf5c397, 1);
+    gfx.fillEllipse(cx - 12, 27, 8, 14);
+    gfx.fillEllipse(cx + 12, 27, 8, 14);
+
+    // Tête
+    gfx.fillStyle(0xf5c397, 1);
+    gfx.fillCircle(cx, 13, 11);
+
+    // Cheveux
+    gfx.fillStyle(0x5a3a1a, 1);
+    gfx.fillRect(cx - 10, 5, 20, 7);
+
+    // Yeux
+    gfx.fillStyle(0x1a1a1a, 1);
+    gfx.fillCircle(cx - 4, 12, 2);
+    gfx.fillCircle(cx + 4, 12, 2);
+    gfx.fillStyle(0xffffff, 0.7);
+    gfx.fillCircle(cx - 3, 11, 1);
+    gfx.fillCircle(cx + 5, 11, 1);
+
+    // Sourire
+    gfx.lineStyle(1, 0x995533, 0.8);
+    gfx.lineBetween(cx - 3, 17, cx + 3, 17);
+
+    gfx.generateTexture('survivor', 40, 48);
     gfx.destroy();
   }
 
