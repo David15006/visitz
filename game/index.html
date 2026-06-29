@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Jeu Phaser</title>
+  <link rel="icon" href="data:," />
+  <style>
+    /* Réinitialisation minimale */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #0d0d1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: monospace;
+    }
+
+    /* Canvas Phaser : centré, avec une légère ombre */
+    canvas {
+      display: block;
+      box-shadow: 0 0 40px rgba(233, 69, 96, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+    Phaser 3 chargé depuis CDN.
+    Pour un projet de production, utiliser un bundler (Vite, Webpack) et npm install phaser.
+  -->
+  <script src="lib/phaser.min.js"></script>
+
+  <!--
+    Point d'entrée du jeu.
+    type="module" active les imports ES6 natifs du navigateur.
+  -->
+  <script type="module" src="src/main.js"></script>
+
+</body>
+</html>
