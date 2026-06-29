@@ -10,6 +10,8 @@ import { PreloadScene } from './scenes/PreloadScene.js';
 import { MainMenuScene } from './scenes/MainMenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { DungeonScene } from './scenes/DungeonScene.js';
+import { FinalZoneScene } from './scenes/FinalZoneScene.js';
+import { CreditsScene } from './scenes/CreditsScene.js';
 
 /** Configuration Phaser 3 */
 const config = {
@@ -42,6 +44,8 @@ const config = {
     MainMenuScene,
     GameScene,
     DungeonScene,
+    FinalZoneScene,
+    CreditsScene,
   ],
 };
 

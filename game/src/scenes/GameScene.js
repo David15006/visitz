@@ -335,6 +335,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   _checkFinalGateInteract() {
+    // Portail ouvert : permettre d'entrer dans la Zone Finale
+    if (this._finalGateOpen && this._openPortalX !== undefined) {
+      const dist = Phaser.Math.Distance.Between(
+        this._player.x, this._player.y, this._openPortalX, this._openPortalY
+      );
+      if (dist < 60) {
+        this._finalGateHint
+          ?.setPosition(this._openPortalX, this._openPortalY - 60)
+          .setText('[E] Entrer dans la Zone Finale')
+          .setAlpha(1);
+        if (Phaser.Input.Keyboard.JustDown(this._player.keys.E)) {
+          this._audio?.stop();
+          this.cameras.main.fadeOut(500, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('FinalZoneScene');
+          });
+        }
+      } else {
+        this._finalGateHint?.setAlpha(0);
+      }
+      return;
+    }
+
     if (!this._finalGateGfx || this._finalGateOpen) return;
     const gx = 1700;
     const gy = 1250;
@@ -410,6 +433,10 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold',
       color: '#ffdd00', stroke: '#000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(5);
+
+    // Mémoriser la position du portail ouvert pour l'interaction E
+    this._openPortalX = x;
+    this._openPortalY = y;
 
     this.cameras.main.shake(600, 0.02);
     this.cameras.main.flash(300, 80, 0, 120, true);

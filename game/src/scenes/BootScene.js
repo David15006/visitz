@@ -60,6 +60,9 @@ export class BootScene extends Phaser.Scene {
     this._createRatKingFrames();
     this._createFinalKeyTextures();
 
+    // Boss final : L'Obscur
+    this._createFinalBossFrames();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -1458,5 +1461,115 @@ export class BootScene extends Phaser.Scene {
 
     ig.generateTexture('icon_final_key', 24, 24);
     ig.destroy();
+  }
+
+  // ── Boss final : L'Obscur ─────────────────────────────────────────────────
+
+  _createFinalBossFrames() {
+    // 4 frames idle + 2 frames attaque, 64×80px
+    const W = 64, H = 80;
+
+    const drawBody = (g, ox, oy, phase) => {
+      // Manteau sombre flottant
+      g.fillStyle(0x110011, 1);
+      g.fillEllipse(ox + 32, oy + 58, 52, 28);
+
+      // Corps principal
+      g.fillStyle(0x1a0033, 1);
+      g.fillRoundedRect(ox + 16, oy + 20, 32, 44, 6);
+
+      // Armure thorax
+      g.fillStyle(0x330066, 1);
+      g.fillRoundedRect(ox + 19, oy + 22, 26, 26, 4);
+
+      // Bords armure violets
+      g.lineStyle(2, 0x9900ff, 0.9);
+      g.strokeRoundedRect(ox + 19, oy + 22, 26, 26, 4);
+
+      // Runes sur l'armure
+      g.fillStyle(0xff00ff, 0.7);
+      g.fillRect(ox + 24, oy + 28, 4, 2);
+      g.fillRect(ox + 30, oy + 28, 4, 2);
+      g.fillRect(ox + 27, oy + 25, 2, 7);
+      g.fillRect(ox + 36, oy + 28, 4, 2);
+      g.fillRect(ox + 38, oy + 25, 2, 7);
+
+      // Tête / masque
+      g.fillStyle(0x220044, 1);
+      g.fillEllipse(ox + 32, oy + 14, 28, 26);
+
+      // Masque
+      g.fillStyle(0x440088, 1);
+      g.fillRoundedRect(ox + 21, oy + 5, 22, 20, 4);
+
+      // Yeux (rouge surnaturel)
+      const eyeColor = phase === 3 ? 0xff0000 : phase === 2 ? 0xff4400 : 0xff2200;
+      g.fillStyle(eyeColor, 1);
+      g.fillRect(ox + 24, oy + 10, 6, 4);
+      g.fillRect(ox + 34, oy + 10, 6, 4);
+
+      // Cornes
+      g.fillStyle(0x550099, 1);
+      g.fillTriangle(ox + 23, oy + 6,  ox + 26, oy + 6,  ox + 22, oy - 3);
+      g.fillTriangle(ox + 41, oy + 6,  ox + 38, oy + 6,  ox + 42, oy - 3);
+    };
+
+    // Frames idle 0-3 (légère oscillation)
+    for (let i = 0; i < 4; i++) {
+      const g = this.add.graphics();
+      g.fillStyle(0x000000, 0);
+      g.fillRect(0, 0, W, H);
+
+      const bob = i < 2 ? 0 : 2; // bobbing
+
+      // Aura sombre
+      const auraAlpha = 0.15 + i * 0.03;
+      g.fillStyle(0x9900ff, auraAlpha);
+      g.fillCircle(W / 2, H / 2 + bob, 30);
+      g.fillStyle(0x6600cc, auraAlpha * 0.5);
+      g.fillCircle(W / 2, H / 2 + bob, 22);
+
+      drawBody(g, 0, bob, 1);
+
+      // Manteau traîne ondulante
+      g.fillStyle(0x0a0016, 0.8);
+      g.fillEllipse(W / 2, H - 8 + bob, 40 + i * 2, 18 - i);
+
+      g.generateTexture(`fb_idle_${i}`, W, H);
+      g.destroy();
+    }
+
+    // Frame attaque 0 (bras levés, aura rouge)
+    const ga0 = this.add.graphics();
+    ga0.fillStyle(0x000000, 0);
+    ga0.fillRect(0, 0, W, H);
+    ga0.fillStyle(0xff0000, 0.25);
+    ga0.fillCircle(W / 2, H / 2, 34);
+    drawBody(ga0, 0, -4, 2);
+    // Bras levés
+    ga0.fillStyle(0x1a0033, 1);
+    ga0.fillRoundedRect(4, 14, 14, 32, 4);  // bras gauche levé
+    ga0.fillRoundedRect(46, 14, 14, 32, 4); // bras droit levé
+    // Énergie dans les mains
+    ga0.fillStyle(0xff00ff, 0.9);
+    ga0.fillCircle(11, 14, 7);
+    ga0.fillCircle(53, 14, 7);
+    ga0.generateTexture('fb_atk_0', W, H);
+    ga0.destroy();
+
+    // Frame attaque 1 (charge, corps incliné, énergie violette intense)
+    const ga1 = this.add.graphics();
+    ga1.fillStyle(0x000000, 0);
+    ga1.fillRect(0, 0, W, H);
+    ga1.fillStyle(0x6600ff, 0.35);
+    ga1.fillCircle(W / 2 + 6, H / 2, 36);
+    drawBody(ga1, 4, 0, 3); // décalé → incliné
+    // Traînée d'énergie
+    ga1.fillStyle(0xcc00ff, 0.6);
+    ga1.fillTriangle(0, 30, 0, 50, 20, 40);
+    ga1.fillStyle(0xff00ff, 0.4);
+    ga1.fillTriangle(0, 35, 0, 45, 12, 40);
+    ga1.generateTexture('fb_atk_1', W, H);
+    ga1.destroy();
   }
 }
