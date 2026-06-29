@@ -9,6 +9,7 @@ import { BootScene } from './scenes/BootScene.js';
 import { PreloadScene } from './scenes/PreloadScene.js';
 import { MainMenuScene } from './scenes/MainMenuScene.js';
 import { GameScene } from './scenes/GameScene.js';
+import { DungeonScene } from './scenes/DungeonScene.js';
 
 /** Configuration Phaser 3 */
 const config = {
@@ -40,6 +41,7 @@ const config = {
     PreloadScene,
     MainMenuScene,
     GameScene,
+    DungeonScene,
   ],
 };
 

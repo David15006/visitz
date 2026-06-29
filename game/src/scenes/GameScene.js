@@ -76,6 +76,7 @@ export class GameScene extends Phaser.Scene {
     this._buildBoss();
     this._setupPhysics();
     this._buildReturnKey();
+    this._buildSewerGrate();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
@@ -271,6 +272,31 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
+  // ── Grille des Égouts ─────────────────────────────────────────────────────
+
+  _buildSewerGrate() {
+    const x = 1650;
+    const y = 1450;
+
+    this._sewerGrate = this.add.image(x, y, 'sewer_grate').setDepth(3);
+
+    // Légère animation pulsée
+    this.tweens.add({
+      targets: this._sewerGrate,
+      alpha: 0.6,
+      duration: 1200,
+      ease: 'Sine.inOut',
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // Texte d'aide
+    this._sewerHint = this.add.text(x, y - 28, '[E] Entrer dans les Égouts', {
+      fontFamily: 'monospace', fontSize: '11px',
+      color: '#aabbff', stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(4).setAlpha(0);
+  }
+
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
@@ -323,14 +349,56 @@ export class GameScene extends Phaser.Scene {
       this._base.repairNear(this._player.x, this._player.y);
     }
 
-    // E → objet intérieur (si pas d'item monde à portée)
+    // E → objet intérieur ou grille des égouts (si pas d'item monde à portée)
     if (Phaser.Input.Keyboard.JustDown(keys.E) && !this._player.nearbyItem) {
+      // Grille des égouts : priorité si à portée et clé en inventaire
+      if (this._sewerGrate) {
+        const distGrate = Phaser.Math.Distance.Between(
+          this._player.x, this._player.y, this._sewerGrate.x, this._sewerGrate.y
+        );
+        if (distGrate < 60) {
+          if (this._player.inventory.countByKey('sewer_key') > 0) {
+            this._player.inventory.removeByKey('sewer_key');
+            if (this._audio) this._audio.stop();
+            this.cameras.main.fadeOut(400, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+              this.scene.start('DungeonScene');
+            });
+            return;
+          } else {
+            // Pas de clé
+            if (!this._sewerNoKeyText) {
+              this._sewerNoKeyText = this.add.text(
+                this._sewerGrate.x, this._sewerGrate.y - 44,
+                'Il faut la Clé des Égouts…', {
+                  fontFamily: 'monospace', fontSize: '11px',
+                  color: '#ff8888', stroke: '#000', strokeThickness: 2,
+                }
+              ).setOrigin(0.5).setDepth(5);
+              this.time.delayedCall(2500, () => {
+                this._sewerNoKeyText?.destroy();
+                this._sewerNoKeyText = null;
+              });
+            }
+            return;
+          }
+        }
+      }
+
       const objKey = this._base.interactNear(this._player.x, this._player.y);
       if (objKey === 'obj_kitchen') {
         this._kitchen.open(this._player.inventory);
       } else if (objKey === 'obj_shop') {
         this._shop.open(this._player.stats, this._player.inventory);
       }
+    }
+
+    // Affichage du hint de la grille selon proximité
+    if (this._sewerGrate && this._sewerHint) {
+      const distGrate = Phaser.Math.Distance.Between(
+        this._player.x, this._player.y, this._sewerGrate.x, this._sewerGrate.y
+      );
+      this._sewerHint.setAlpha(distGrate < 60 ? 1 : 0);
     }
   }
 }

@@ -51,6 +51,11 @@ export class BootScene extends Phaser.Scene {
     this._createBossFrames();
     this._createSewerKeyTextures();
 
+    // Donjon : rats, infectés, objets interactifs
+    this._createRatFrames();
+    this._createZombieInfectedFrames();
+    this._createDungeonObjectTextures();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -981,5 +986,261 @@ export class BootScene extends Phaser.Scene {
 
     ig.generateTexture('icon_sewer_key', 24, 24);
     ig.destroy();
+  }
+
+  // ── Rat ────────────────────────────────────────────────────────────────────
+
+  _createRatFrames() {
+    for (let f = 0; f < 4; f++) {
+      const g = this.make.graphics({ add: false });
+      // Corps brun-gris (24×18)
+      g.fillStyle(0x6a5a3a, 1);
+      g.fillEllipse(12, 11, 18, 10);
+
+      // Tête
+      g.fillStyle(0x7a6a48, 1);
+      g.fillEllipse(19, 9, 10, 8);
+
+      // Yeux rouges
+      g.fillStyle(0xff2200, 1);
+      g.fillCircle(21, 8, 1.5);
+
+      // Oreilles
+      g.fillStyle(0xaa7755, 1);
+      g.fillCircle(20, 5, 2);
+      g.fillCircle(17, 4, 2);
+
+      // Queue sinusoïdale selon frame
+      g.lineStyle(2, 0x554433, 1);
+      const qOff = Math.sin((f / 4) * Math.PI * 2) * 3;
+      g.lineBetween(3, 12, 0, 12 + qOff);
+
+      // Pattes animées
+      const legX = [7, 10, 14, 17];
+      legX.forEach((lx, i) => {
+        const ly = (i + f) % 2 === 0 ? 16 : 18;
+        g.fillStyle(0x554433, 1);
+        g.fillRect(lx, 14, 2, ly - 14);
+      });
+
+      g.generateTexture(`rat_walk_${f}`, 24, 20);
+      g.destroy();
+    }
+
+    // Frames d'attaque (2)
+    for (let f = 0; f < 2; f++) {
+      const g = this.make.graphics({ add: false });
+      g.fillStyle(0x8a7048, 1);
+      g.fillEllipse(12, 10, 18, 10);
+      g.fillStyle(0x9a8060, 1);
+      g.fillEllipse(20, 8, 10, 8);
+
+      // Gueule ouverte
+      g.fillStyle(0xcc1100, 1);
+      g.fillRect(22, 9, 4, 3);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(22, 9, 2, 1);
+
+      g.fillStyle(0xff2200, 1);
+      g.fillCircle(21, 7, 1.5);
+
+      g.generateTexture(`rat_atk_${f}`, 24, 20);
+      g.destroy();
+    }
+  }
+
+  // ── Zombie Infecté ─────────────────────────────────────────────────────────
+
+  _createZombieInfectedFrames() {
+    for (let f = 0; f < 4; f++) {
+      const g  = this.make.graphics({ add: false });
+      const cx = 16;
+
+      // Corps vert-gris malade (32×40)
+      g.fillStyle(0x3a6a3a, 1);
+      g.fillRect(cx - 8, 14, 16, 20);
+
+      // Tête
+      g.fillStyle(0x4a7a4a, 1);
+      g.fillRect(cx - 6, 2, 12, 12);
+
+      // Veines toxiques
+      g.lineStyle(1, 0x00ff44, 0.6);
+      g.lineBetween(cx - 4, 6, cx - 2, 10);
+      g.lineBetween(cx + 2, 4, cx + 4, 9);
+      g.lineBetween(cx - 6, 20, cx - 2, 26);
+      g.lineBetween(cx + 2, 18, cx + 6, 24);
+
+      // Yeux vert-jaune
+      g.fillStyle(0xaaff00, 1);
+      g.fillCircle(cx - 3, 7, 2);
+      g.fillCircle(cx + 3, 7, 2);
+
+      // Lèvres verdâtres
+      g.fillStyle(0x22cc44, 1);
+      g.fillRect(cx - 3, 12, 6, 2);
+
+      // Jambes
+      const legOff = (f % 2 === 0) ? 3 : 0;
+      g.fillStyle(0x2a5a2a, 1);
+      g.fillRect(cx - 8, 34, 5, 6 + legOff);
+      g.fillRect(cx + 3, 34, 5, 6 - legOff + 3);
+
+      // Bras
+      g.fillStyle(0x3a6a3a, 1);
+      const armOff = Math.sin((f / 4) * Math.PI * 2) * 4;
+      g.fillRect(cx - 14, 16 + armOff, 6, 14);
+      g.fillRect(cx + 8,  16 - armOff, 6, 14);
+
+      // Bulle toxique sur épaule
+      g.fillStyle(0x00ff66, 0.4);
+      g.fillCircle(cx + 10, 14, 4);
+
+      g.generateTexture(`zi_walk_${f}`, 32, 48);
+      g.destroy();
+    }
+
+    // Frames d'attaque (2)
+    for (let f = 0; f < 2; f++) {
+      const g  = this.make.graphics({ add: false });
+      const cx = 16;
+
+      g.fillStyle(0x3a6a3a, 1);
+      g.fillRect(cx - 8, 14, 16, 20);
+      g.fillStyle(0x4a7a4a, 1);
+      g.fillRect(cx - 6, 2, 12, 12);
+
+      g.lineStyle(1, 0x00ff44, 0.7);
+      g.lineBetween(cx - 4, 5, cx + 4, 8);
+      g.lineBetween(cx - 5, 18, cx + 5, 28);
+
+      g.fillStyle(0x88ff00, 1);
+      g.fillCircle(cx - 3, 7, 2);
+      g.fillCircle(cx + 3, 7, 2);
+
+      // Bras avancé en attaque
+      const fwd = f === 0 ? -6 : -2;
+      g.fillStyle(0x2a5a2a, 1);
+      g.fillRect(cx - 20, 14 + fwd, 12, 5);
+      g.fillRect(cx + 8,  14,       12, 5);
+
+      // Crachat toxique
+      if (f === 0) {
+        g.fillStyle(0x00ff44, 0.8);
+        g.fillCircle(cx - 22, 13, 4);
+      }
+
+      g.generateTexture(`zi_atk_${f}`, 32, 48);
+      g.destroy();
+    }
+  }
+
+  // ── Objets du Donjon ───────────────────────────────────────────────────────
+
+  _createDungeonObjectTextures() {
+    // ─ Piège (désarmé) : plaque grise
+    const tOff = this.make.graphics({ add: false });
+    tOff.fillStyle(0x555566, 1);
+    tOff.fillRect(0, 0, 28, 28);
+    tOff.lineStyle(2, 0x8888aa, 0.8);
+    tOff.strokeRect(1, 1, 26, 26);
+    tOff.lineStyle(1, 0x7777aa, 0.5);
+    tOff.lineBetween(4, 14, 24, 14);
+    tOff.lineBetween(14, 4, 14, 24);
+    tOff.generateTexture('trap_off', 28, 28);
+    tOff.destroy();
+
+    // ─ Piège (armé) : piques rouges
+    const tOn = this.make.graphics({ add: false });
+    tOn.fillStyle(0x442222, 1);
+    tOn.fillRect(0, 0, 28, 28);
+    tOn.fillStyle(0xcc1100, 1);
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        tOn.fillTriangle(
+          4 + i * 5, 28,
+          6 + i * 5, 8 + j * 2,
+          8 + i * 5, 28
+        );
+      }
+    }
+    tOn.lineStyle(1, 0xff2200, 0.7);
+    tOn.strokeRect(0, 0, 28, 28);
+    tOn.generateTexture('trap_on', 28, 28);
+    tOn.destroy();
+
+    // ─ Levier (relevé)
+    const lUp = this.make.graphics({ add: false });
+    // Socle
+    lUp.fillStyle(0x665544, 1);
+    lUp.fillRect(6, 18, 12, 6);
+    lUp.lineStyle(1, 0x998866, 0.8);
+    lUp.strokeRect(6, 18, 12, 6);
+    // Bras du levier (vertical)
+    lUp.fillStyle(0x997755, 1);
+    lUp.fillRect(11, 4, 4, 16);
+    lUp.fillStyle(0xffcc44, 1);
+    lUp.fillCircle(13, 4, 4);
+    lUp.generateTexture('lever_up', 26, 26);
+    lUp.destroy();
+
+    // ─ Levier (abaissé)
+    const lDn = this.make.graphics({ add: false });
+    lDn.fillStyle(0x665544, 1);
+    lDn.fillRect(6, 18, 12, 6);
+    lDn.lineStyle(1, 0x998866, 0.8);
+    lDn.strokeRect(6, 18, 12, 6);
+    // Bras incliné vers la droite
+    lDn.fillStyle(0x997755, 1);
+    lDn.fillRect(12, 10, 4, 10);
+    lDn.fillRect(14, 6, 10, 4);
+    lDn.fillStyle(0xffcc44, 1);
+    lDn.fillCircle(22, 7, 4);
+    lDn.generateTexture('lever_down', 26, 26);
+    lDn.destroy();
+
+    // ─ Porte de donjon (horizontal, 40×12)
+    const dh = this.make.graphics({ add: false });
+    dh.fillStyle(0x553311, 1);
+    dh.fillRect(0, 0, 40, 12);
+    dh.lineStyle(2, 0x8855aa, 0.9);
+    dh.strokeRect(0, 0, 40, 12);
+    dh.fillStyle(0x885500, 0.5);
+    dh.fillRect(4, 3, 14, 6);
+    dh.fillRect(22, 3, 14, 6);
+    // Rune
+    dh.lineStyle(1, 0xcc00ff, 0.7);
+    dh.lineBetween(18, 1, 22, 11);
+    dh.generateTexture('dungeon_door_h', 40, 12);
+    dh.destroy();
+
+    // ─ Torche (16×24)
+    const torch = this.make.graphics({ add: false });
+    // Manche
+    torch.fillStyle(0x663311, 1);
+    torch.fillRect(6, 10, 4, 14);
+    // Flamme
+    torch.fillStyle(0xff8800, 1);
+    torch.fillEllipse(8, 8, 10, 14);
+    torch.fillStyle(0xffdd00, 0.8);
+    torch.fillEllipse(8, 10, 6, 8);
+    torch.fillStyle(0xffffff, 0.4);
+    torch.fillEllipse(8, 12, 3, 4);
+    torch.generateTexture('torch', 16, 24);
+    torch.destroy();
+
+    // ─ Grille d'égout (entrée donjon, 32×32)
+    const grate = this.make.graphics({ add: false });
+    grate.fillStyle(0x222233, 1);
+    grate.fillRect(0, 0, 32, 32);
+    grate.lineStyle(2, 0x444466, 0.9);
+    for (let i = 0; i <= 32; i += 8) {
+      grate.lineBetween(i, 0, i, 32);
+      grate.lineBetween(0, i, 32, i);
+    }
+    grate.lineStyle(2, 0x6655aa, 0.6);
+    grate.strokeRect(0, 0, 32, 32);
+    grate.generateTexture('sewer_grate', 32, 32);
+    grate.destroy();
   }
 }
