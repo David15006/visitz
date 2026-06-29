@@ -1,63 +1,113 @@
 /**
  * GameScene.js
- * Scène principale de jeu.
- * Orchestre : WorldMap, Player, DayNightCycle, AudioManager, HUD.
+ * Scène principale — orchestre tous les systèmes du jeu.
  */
 
-import { GameConfig } from '../config/GameConfig.js';
+import { GameConfig }    from '../config/GameConfig.js';
 import { Player }        from '../entities/Player.js';
 import { WorldMap }      from '../world/WorldMap.js';
 import { DayNightCycle } from '../systems/DayNightCycle.js';
 import { AudioManager }  from '../systems/AudioManager.js';
 import { HUD }           from '../ui/HUD.js';
+import { PlayerHUD }     from '../ui/PlayerHUD.js';
+import { Bat }           from '../entities/items/Bat.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
 
     /** @type {Player} */
-    this._player = null;
+    this._player   = null;
     /** @type {DayNightCycle} */
     this._dayNight = null;
     /** @type {AudioManager} */
-    this._audio = null;
+    this._audio    = null;
     /** @type {HUD} */
-    this._hud = null;
+    this._hud      = null;
+    /** @type {PlayerHUD} */
+    this._playerHUD = null;
+
+    // Groupe d'items ramassables du monde
+    this._worldItems = null;
   }
 
   create() {
-    const { MAP_WIDTH, MAP_HEIGHT } = GameConfig;
+    const { MAP_WIDTH: W, MAP_HEIGHT: H } = GameConfig;
 
-    // Limites du monde physique (collision avec les bords)
-    this.physics.world.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
+    this.physics.world.setBounds(0, 0, W, H);
 
-    // ── Ordre de construction (important pour les depths) ──────────────
+    // Ordre de création (respecte les depths)
     this._buildMap();
-    this._buildPlayer(MAP_WIDTH, MAP_HEIGHT);
-    this._setupCamera(MAP_WIDTH, MAP_HEIGHT);
-    this._buildDayNight();   // après la caméra (overlay suit l'écran)
-    this._buildHUD();
+    this._spawnWorldItems();
+    this._buildPlayer(W, H);
+    this._setupCamera(W, H);
+    this._buildDayNight();
+    this._buildHUDs();
     this._buildAudio();
     this._buildReturnKey();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
 
-  /** Construit la carte du monde */
+  // ── Carte ─────────────────────────────────────────────────────────────────
+
   _buildMap() {
     new WorldMap(this);
   }
 
-  /** Crée le joueur au centre de la carte */
-  _buildPlayer(w, h) {
-    // Spawn au centre de la zone Base
-    const base = { x: 1600, y: 1200 };
-    this._player = new Player(this, base.x, base.y);
-    // Le joueur doit être au-dessus du décor
-    this._player.setDepth(10);
+  // ── Items du monde ────────────────────────────────────────────────────────
+
+  /**
+   * Place quelques battes ramassables aux alentours de la base.
+   * Chaque sprite porte ses données item via `setData('item', ...)`.
+   */
+  _spawnWorldItems() {
+    this._worldItems = this.add.group();
+
+    const spawns = [
+      { x: 1750, y: 1100 },
+      { x: 1420, y: 1350 },
+      { x: 1640, y: 900  },
+    ];
+
+    spawns.forEach(({ x, y }) => {
+      const sprite = this.add.image(x, y, 'bat_world')
+        .setDepth(3)
+        .setData('item', new Bat());
+
+      // Légère animation de flottement
+      this.tweens.add({
+        targets: sprite,
+        y: y - 5,
+        duration: 900 + Math.random() * 400,
+        ease: 'Sine.inOut',
+        yoyo: true,
+        repeat: -1,
+      });
+
+      // Glow pulsé (alpha)
+      this.tweens.add({
+        targets: sprite,
+        alpha: 0.65,
+        duration: 600,
+        ease: 'Sine.inOut',
+        yoyo: true,
+        repeat: -1,
+      });
+
+      this._worldItems.add(sprite);
+    });
   }
 
-  /** Configure la caméra avec suivi doux et déadzone */
+  // ── Joueur ────────────────────────────────────────────────────────────────
+
+  _buildPlayer(w, h) {
+    this._player = new Player(this, 1600, 1200);
+    this._player.setWorldItems(this._worldItems);
+  }
+
+  // ── Caméra ────────────────────────────────────────────────────────────────
+
   _setupCamera(mapW, mapH) {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, mapW, mapH);
@@ -65,44 +115,38 @@ export class GameScene extends Phaser.Scene {
     cam.setDeadzone(80, 50);
   }
 
-  /** Crée le cycle jour/nuit et branche le callback audio */
+  // ── Jour / nuit ────────────────────────────────────────────────────────────
+
   _buildDayNight() {
     this._dayNight = new DayNightCycle(this, (phase) => {
-      this._onPhaseChange(phase);
+      if (!this._audio) return;
+      if (phase === 'night')   this._audio.transitionToNight();
+      if (phase === 'day')     this._audio.transitionToDay();
     });
   }
 
-  /** Crée le HUD */
-  _buildHUD() {
+  // ── HUDs ──────────────────────────────────────────────────────────────────
+
+  _buildHUDs() {
+    // HUD général : jour, heure, coords, aide clavier
     this._hud = new HUD(this, this._dayNight, this._player);
+    // HUD joueur : vie, endurance, inventaire
+    this._playerHUD = new PlayerHUD(this, this._player);
   }
 
-  /** Initialise l'audio (démarrage différé au premier geste utilisateur) */
+  // ── Audio ─────────────────────────────────────────────────────────────────
+
   _buildAudio() {
     this._audio = new AudioManager();
-    // L'AudioContext nécessite un geste utilisateur.
-    // La scène est lancée depuis un clic sur "Nouvelle Partie", donc on peut démarrer.
     try {
       this._audio.start();
     } catch (e) {
-      // Silencieusement ignoré si le navigateur bloque avant interaction
       console.warn('AudioManager: démarrage différé', e.message);
     }
   }
 
-  /** Gère les transitions audio lors d'un changement de phase */
-  _onPhaseChange(phase) {
-    if (!this._audio) return;
-    if (phase === 'night') {
-      this._audio.transitionToNight();
-    } else if (phase === 'day') {
-      this._audio.transitionToDay();
-    }
-    // sunset et sunrise : pas de transition abrupte,
-    // le fondu se fera au prochain changement (night / day)
-  }
+  // ── Touche Échap ──────────────────────────────────────────────────────────
 
-  /** Touche Échap → retour au menu */
   _buildReturnKey() {
     this.input.keyboard.once('keydown-ESC', () => {
       if (this._audio) this._audio.stop();
@@ -113,10 +157,12 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Boucle principale */
-  update(_time, delta) {
-    this._player.update();
+  // ── Boucle principale ─────────────────────────────────────────────────────
+
+  update(time, delta) {
+    this._player.update(time, delta);
     this._dayNight.update(delta);
     this._hud.update();
+    this._playerHUD.update();
   }
 }

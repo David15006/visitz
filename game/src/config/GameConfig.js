@@ -1,7 +1,6 @@
 /**
  * GameConfig.js
  * Constantes globales du jeu : dimensions, couleurs, vitesses, etc.
- * Modifier ces valeurs pour ajuster le comportement global sans toucher à la logique.
  */
 
 export const GameConfig = {
@@ -13,12 +12,23 @@ export const GameConfig = {
   MAP_WIDTH: 3200,
   MAP_HEIGHT: 2400,
 
-  // --- Joueur ---
+  // --- Joueur : déplacement ---
   PLAYER: {
-    SPEED: 220,
-    SIZE: 32,
-    COLOR: 0x4fc3f7,
-    BORDER_COLOR: 0x0288d1,
+    SPEED: 210,                  // vitesse marche (px/s)
+    SPRINT_SPEED: 370,           // vitesse course (px/s)
+    SPRITE_W: 40,
+    SPRITE_H: 48,
+    HITBOX_RADIUS: 13,           // rayon du cercle de collision
+    PICKUP_RANGE: 70,            // distance de ramassage (px)
+  },
+
+  // --- Stats joueur ---
+  PLAYER_STATS: {
+    MAX_HEALTH: 100,
+    MAX_STAMINA: 100,
+    STAMINA_DRAIN:  28,          // par seconde en sprint
+    STAMINA_REGEN:  14,          // par seconde hors sprint
+    EXHAUSTED_THRESHOLD: 25,     // seuil de récupération après épuisement
   },
 
   // --- Couleurs de l'interface ---
@@ -33,35 +43,25 @@ export const GameConfig = {
 
   // --- Fond de la carte ---
   MAP: {
-    BG_COLOR: 0x2d4a1e,    // vert herbe foncé
+    BG_COLOR: 0x2d4a1e,
     GRID_COLOR: 0x263340,
   },
 
   // --- Cycle jour / nuit ---
   DAY_NIGHT: {
-    // Durées en millisecondes (temps réel)
-    DAY_MS:   8 * 60 * 1000,   // 8 minutes de jour
-    NIGHT_MS: 4 * 60 * 1000,   // 4 minutes de nuit
-    TRANS_MS: 60 * 1000,        // 1 minute de transition de chaque côté
-
-    // Heure de jeu au démarrage d'un cycle
-    START_HOUR: 6,              // 06:00
-
-    // Vitesse du temps : 2 minutes de jeu par seconde réelle
-    // (16 h de jour en 8 min réelles = 2 gmin/s ; identique la nuit)
+    DAY_MS:   8 * 60 * 1000,
+    NIGHT_MS: 4 * 60 * 1000,
+    TRANS_MS: 60 * 1000,
+    START_HOUR: 6,
     GAME_MIN_PER_REAL_MS: 2 / 1000,
-
-    // Alpha max de l'overlay nocturne
     NIGHT_OVERLAY_ALPHA: 0.68,
-
-    // Couleurs de l'overlay (ARGB hex)
-    COLOR_NIGHT:   0x000528,    // bleu nuit
-    COLOR_SUNSET:  0xcc4400,    // orange couchant
+    COLOR_NIGHT:  0x000528,
+    COLOR_SUNSET: 0xcc4400,
   },
 
   // --- Audio ---
   AUDIO: {
     MASTER_VOLUME: 0.5,
-    MUSIC_FADE_MS: 3000,        // durée du crossfade jour ↔ nuit
+    MUSIC_FADE_MS: 3000,
   },
 };
