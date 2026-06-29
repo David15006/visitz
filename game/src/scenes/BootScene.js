@@ -56,6 +56,10 @@ export class BootScene extends Phaser.Scene {
     this._createZombieInfectedFrames();
     this._createDungeonObjectTextures();
 
+    // Boss : Roi des Rats + Clé Finale
+    this._createRatKingFrames();
+    this._createFinalKeyTextures();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -1242,5 +1246,217 @@ export class BootScene extends Phaser.Scene {
     grate.strokeRect(0, 0, 32, 32);
     grate.generateTexture('sewer_grate', 32, 32);
     grate.destroy();
+  }
+
+  // ── Roi des Rats ──────────────────────────────────────────────────────────
+
+  _createRatKingFrames() {
+    // Grande créature ratesque couronnée (48×56)
+    for (let f = 0; f < 4; f++) {
+      const g  = this.make.graphics({ add: false });
+      const cx = 24;
+
+      // Corps brun-gris massif
+      g.fillStyle(0x5a4a2e, 1);
+      g.fillEllipse(cx, 32, 36, 28);
+
+      // Fourrure sombre
+      g.fillStyle(0x3a2a18, 1);
+      g.fillEllipse(cx - 12, 32, 12, 18);
+      g.fillEllipse(cx + 12, 32, 12, 18);
+
+      // Tête large
+      g.fillStyle(0x6a5a38, 1);
+      g.fillEllipse(cx, 16, 28, 22);
+
+      // Oreilles pointues
+      g.fillStyle(0x4a3a22, 1);
+      g.fillTriangle(cx - 12, 12, cx - 18, 0, cx - 6, 6);
+      g.fillTriangle(cx + 12, 12, cx + 18, 0, cx + 6, 6);
+
+      // Yeux rouges brillants
+      g.fillStyle(0xff1100, 1);
+      g.fillCircle(cx - 5, 14, 3);
+      g.fillCircle(cx + 5, 14, 3);
+      g.fillStyle(0xff6600, 0.6);
+      g.fillCircle(cx - 5, 14, 1.5);
+      g.fillCircle(cx + 5, 14, 1.5);
+
+      // Cicatrices / moustaches
+      g.lineStyle(1, 0x2a1a08, 0.8);
+      g.lineBetween(cx - 3, 18, cx - 10, 16);
+      g.lineBetween(cx + 3, 18, cx + 10, 16);
+      g.lineBetween(cx - 3, 20, cx - 10, 19);
+      g.lineBetween(cx + 3, 20, cx + 10, 19);
+
+      // Dents
+      g.fillStyle(0xeeeecc, 1);
+      g.fillRect(cx - 4, 22, 3, 4);
+      g.fillRect(cx + 1, 22, 3, 4);
+
+      // Pattes animées
+      const legOff = f % 2 === 0 ? 4 : 0;
+      g.fillStyle(0x4a3a22, 1);
+      g.fillRect(cx - 18, 42, 8, 10 + legOff);
+      g.fillRect(cx + 10, 42, 8, 10 - legOff + 4);
+
+      // Bras lourds
+      const armOff = Math.sin((f / 4) * Math.PI * 2) * 5;
+      g.fillStyle(0x5a4a2e, 1);
+      g.fillRect(cx - 24, 22 + armOff, 8, 18);
+      g.fillRect(cx + 16, 22 - armOff, 8, 18);
+
+      // Griffes
+      g.fillStyle(0x222222, 1);
+      g.fillRect(cx - 26, 39 + armOff, 4, 3);
+      g.fillRect(cx + 22, 39 - armOff, 4, 3);
+
+      // Queue épaisse
+      g.lineStyle(4, 0x3a2a18, 1);
+      const qOff = Math.sin((f / 4) * Math.PI * 2) * 6;
+      g.lineBetween(cx - 18, 40, cx - 28, 50 + qOff);
+
+      g.generateTexture(`rk_walk_${f}`, 48, 56);
+      g.destroy();
+    }
+
+    // Frames d'attaque
+    for (let f = 0; f < 2; f++) {
+      const g  = this.make.graphics({ add: false });
+      const cx = 24;
+
+      g.fillStyle(0x6a4a28, 1);
+      g.fillEllipse(cx, 32, 36, 28);
+      g.fillStyle(0x4a3018, 1);
+      g.fillEllipse(cx - 12, 32, 12, 18);
+      g.fillEllipse(cx + 12, 32, 12, 18);
+
+      g.fillStyle(0x7a5a38, 1);
+      g.fillEllipse(cx, 15, 28, 22);
+
+      g.fillStyle(0x4a3020, 1);
+      g.fillTriangle(cx - 12, 11, cx - 20, -2, cx - 5, 5);
+      g.fillTriangle(cx + 12, 11, cx + 20, -2, cx + 5, 5);
+
+      // Yeux rouges plus grands (en colère)
+      g.fillStyle(0xff0000, 1);
+      g.fillCircle(cx - 5, 13, 4);
+      g.fillCircle(cx + 5, 13, 4);
+
+      // Gueule ouverte
+      g.fillStyle(0xcc0000, 1);
+      g.fillRect(cx - 6, 21, 12, 5);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(cx - 5, 21, 3, 3);
+      g.fillRect(cx + 2, 21, 3, 3);
+
+      // Bras avancés en frappe
+      const fwd = f === 0 ? -8 : -3;
+      g.fillStyle(0x5a3a18, 1);
+      g.fillRect(cx - 32, 20 + fwd, 14, 6);
+      g.fillRect(cx + 18, 20,       14, 6);
+
+      g.generateTexture(`rk_atk_${f}`, 48, 56);
+      g.destroy();
+    }
+
+    // Frames de charge
+    for (let f = 0; f < 2; f++) {
+      const g  = this.make.graphics({ add: false });
+      const cx = 24;
+
+      // Corps incliné (charge)
+      g.fillStyle(0x8a2200, 1);   // teinté rouge pour la charge
+      g.fillEllipse(cx, 30, 40, 24);
+
+      g.fillStyle(0x5a1800, 1);
+      g.fillEllipse(cx, 14, 26, 20);
+
+      g.fillStyle(0xff0000, 1);
+      g.fillCircle(cx - 5, 12, 4);
+      g.fillCircle(cx + 5, 12, 4);
+
+      g.fillStyle(0x4a3020, 1);
+      g.fillTriangle(cx - 11, 9, cx - 19, -3, cx - 4, 4);
+      g.fillTriangle(cx + 11, 9, cx + 19, -3, cx + 4, 4);
+
+      // Lignes de vitesse
+      g.lineStyle(2, 0xff4400, 0.7);
+      for (let i = 0; i < 4; i++) {
+        g.lineBetween(cx - 24, 18 + i * 8, cx - 36, 18 + i * 8);
+      }
+
+      g.generateTexture(`rk_charge_${f}`, 48, 56);
+      g.destroy();
+    }
+
+    // Couronne dorée (24×16)
+    const crown = this.make.graphics({ add: false });
+    crown.fillStyle(0xffcc00, 1);
+    // Base
+    crown.fillRect(0, 8, 24, 8);
+    // Pointes de la couronne
+    crown.fillTriangle(2, 8, 6, 0, 10, 8);
+    crown.fillTriangle(10, 8, 12, 2, 14, 8);
+    crown.fillTriangle(14, 8, 18, 0, 22, 8);
+    // Gemmes
+    crown.fillStyle(0xff2200, 1);
+    crown.fillCircle(6, 5, 2);
+    crown.fillStyle(0x00aaff, 1);
+    crown.fillCircle(12, 3, 2);
+    crown.fillStyle(0xff2200, 1);
+    crown.fillCircle(18, 5, 2);
+    // Bordure
+    crown.lineStyle(1, 0xaa8800, 1);
+    crown.strokeRect(0, 8, 24, 8);
+    crown.generateTexture('rat_crown', 24, 16);
+    crown.destroy();
+  }
+
+  // ── Clé Finale ────────────────────────────────────────────────────────────
+
+  _createFinalKeyTextures() {
+    // Monde : clé dorée avec aura rayonnante (36×24)
+    const wg = this.make.graphics({ add: false });
+
+    // Aura dorée
+    wg.fillStyle(0xffdd00, 0.3);
+    wg.fillCircle(18, 12, 18);
+    wg.fillStyle(0xffee88, 0.15);
+    wg.fillCircle(18, 12, 14);
+
+    // Corps de la clé
+    wg.fillStyle(0xffcc00, 1);
+    wg.fillCircle(10, 10, 7);      // anneau
+    wg.fillStyle(0x1a0800, 1);
+    wg.fillCircle(10, 10, 4);      // trou anneau
+    wg.fillStyle(0xffcc00, 1);
+    wg.fillRect(15, 8, 18, 4);    // tige
+    wg.fillRect(29, 8, 3, 7);     // dent 1
+    wg.fillRect(24, 8, 3, 5);     // dent 2
+
+    // Reflets
+    wg.lineStyle(1, 0xffffff, 0.7);
+    wg.strokeCircle(10, 9, 5);
+
+    wg.generateTexture('final_key_world', 36, 24);
+    wg.destroy();
+
+    // Icône inventaire (24×24)
+    const ig = this.make.graphics({ add: false });
+    ig.fillStyle(0xffcc00, 1);
+    ig.fillCircle(8, 8, 5);
+    ig.fillStyle(0x1a0800, 1);
+    ig.fillCircle(8, 8, 3);
+    ig.fillStyle(0xffcc00, 1);
+    ig.fillRect(12, 6, 10, 3);
+    ig.fillRect(19, 6, 2, 5);
+    ig.fillRect(15, 6, 2, 4);
+
+    ig.lineStyle(1, 0xffee55, 0.8);
+    ig.strokeCircle(8, 8, 5);
+
+    ig.generateTexture('icon_final_key', 24, 24);
+    ig.destroy();
   }
 }

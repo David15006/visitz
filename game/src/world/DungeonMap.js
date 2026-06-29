@@ -22,8 +22,8 @@ export class DungeonMap {
   _build() {
     const scene = this._scene;
 
-    // Fond sombre total
-    scene.add.rectangle(900, 700, 1800, 1400, 0x050508).setDepth(0);
+    // Fond sombre total (monde étendu pour R9)
+    scene.add.rectangle(1100, 800, 2200, 1600, 0x050508).setDepth(0);
 
     // ── Salles ──────────────────────────────────────────────────────────────
     //
@@ -87,11 +87,19 @@ export class DungeonMap {
           { side: 'E', center: 1184 }, // → corridor H3 (porte)
         ],
       },
-      // R8 sortie
+      // R8 antichambre boss
       {
         id: 'R8', x: 1400, y: 1080, w: 288, h: 208,
         openings: [
           { side: 'W', center: 1184 }, // ← corridor H3 (porte)
+          { side: 'E', center: 1184 }, // → corridor H4 (boss)
+        ],
+      },
+      // R9 salle du boss (grande arène)
+      {
+        id: 'R9', x: 1800, y: 960, w: 380, h: 320,
+        openings: [
+          { side: 'W', center: 1184 }, // ← corridor H4
         ],
       },
     ];
@@ -105,6 +113,7 @@ export class DungeonMap {
       { x: 1112, y: 648, w: 64, h: 112 },  // V3 R3↔R5 (porte)
       { x: 1112, y: 968, w: 64, h: 112 },  // V4 R5↔R7
       { x: 1288, y: 1152, w: 112, h: 64 }, // H3 R7↔R8 (porte)
+      { x: 1688, y: 1152, w: 112, h: 64 }, // H4 R8↔R9 (boss)
     ];
 
     // Dessiner sols des corridors
@@ -315,6 +324,15 @@ export class DungeonMap {
       { x: 1260, y: 1260 },
       { x: 1420, y: 1260 },
       { x: 1660, y: 1260 },
+      // R9 salle du boss (torches rouges — teinte différente via tint)
+      { x: 1830, y: 980  },
+      { x: 2140, y: 980  },
+      { x: 1830, y: 1260 },
+      { x: 2140, y: 1260 },
+      { x: 1990, y: 970  },
+      { x: 1990, y: 1268 },
+      { x: 1808, y: 1120 },
+      { x: 2172, y: 1120 },
     ];
 
     torches.forEach(({ x, y }) => {

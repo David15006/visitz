@@ -77,6 +77,7 @@ export class GameScene extends Phaser.Scene {
     this._setupPhysics();
     this._buildReturnKey();
     this._buildSewerGrate();
+    this._buildFinalGate();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
@@ -297,6 +298,123 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(4).setAlpha(0);
   }
 
+  // ── Portail de la Zone Finale ─────────────────────────────────────────────
+
+  _buildFinalGate() {
+    const x = 1700;
+    const y = 1250;
+
+    // Porte verrouillée (graphique)
+    this._finalGateGfx = this.add.graphics().setDepth(4);
+    this._finalGateGfx.fillStyle(0x221133, 1);
+    this._finalGateGfx.fillRect(x - 20, y - 36, 40, 72);
+    this._finalGateGfx.lineStyle(3, 0x660099, 0.9);
+    this._finalGateGfx.strokeRect(x - 20, y - 36, 40, 72);
+    // Serrure
+    this._finalGateGfx.fillStyle(0xaa0088, 1);
+    this._finalGateGfx.fillCircle(x, y, 7);
+    this._finalGateGfx.fillStyle(0xcc00ff, 0.5);
+    this._finalGateGfx.fillCircle(x, y, 4);
+
+    this._finalGateOpen = false;
+
+    this._finalGateHint = this.add.text(x, y - 52, '', {
+      fontFamily: 'monospace', fontSize: '11px',
+      color: '#cc88ff', stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(5).setAlpha(0);
+
+    // Pulsation mystérieuse
+    this.tweens.add({
+      targets: this._finalGateGfx,
+      alpha: 0.7,
+      duration: 1400,
+      ease: 'Sine.inOut',
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  _checkFinalGateInteract() {
+    if (!this._finalGateGfx || this._finalGateOpen) return;
+    const gx = 1700;
+    const gy = 1250;
+    const dist = Phaser.Math.Distance.Between(this._player.x, this._player.y, gx, gy);
+
+    if (dist < 70) {
+      const hasKey = this._player.inventory.countByKey('final_key') > 0;
+      this._finalGateHint
+        .setText(hasKey ? '[E] Ouvrir la Zone Finale' : 'Clé Finale requise')
+        .setAlpha(1);
+
+      if (hasKey && Phaser.Input.Keyboard.JustDown(this._player.keys.E)) {
+        this._player.inventory.removeByKey('final_key');
+        this._openFinalGate(gx, gy);
+      }
+    } else {
+      this._finalGateHint.setAlpha(0);
+    }
+  }
+
+  _openFinalGate(x, y) {
+    this._finalGateOpen = true;
+    this._finalGateHint.setAlpha(0);
+
+    // Explosion violette
+    for (let i = 0; i < 8; i++) {
+      const ring = this.add.graphics().setDepth(6);
+      ring.lineStyle(3, 0xcc00ff, 0.9);
+      ring.strokeCircle(x, y, 28);
+      this.tweens.add({
+        targets: ring,
+        scaleX: 4 + i * 0.5, scaleY: 4 + i * 0.5,
+        alpha: 0,
+        delay: i * 80,
+        duration: 600,
+        onComplete: () => ring.destroy(),
+      });
+    }
+
+    // Faire disparaître la porte
+    this.tweens.add({
+      targets: this._finalGateGfx,
+      alpha: 0, scaleX: 2, scaleY: 2,
+      duration: 700,
+      onComplete: () => this._finalGateGfx.destroy(),
+    });
+
+    // Notification victoire totale
+    if (this._notification) {
+      this._notification.show(
+        '🏆  ZONE FINALE DÉVERROUILLÉE — Vous avez vaincu le Roi des Rats !',
+        '#ffdd00', 7000
+      );
+    }
+
+    // Portail scintillant à la place
+    const portal = this.add.graphics().setDepth(4);
+    const drawPortal = () => {
+      portal.clear();
+      const t     = this.time.now;
+      const alpha = 0.6 + 0.25 * Math.sin(t / 250);
+      portal.fillStyle(0xcc00ff, alpha);
+      portal.fillCircle(x, y, 22);
+      portal.fillStyle(0xffffff, alpha * 0.4);
+      portal.fillCircle(x, y, 12);
+      portal.lineStyle(2, 0xffffff, alpha);
+      portal.strokeCircle(x, y, 28);
+    };
+    this.events.on('update', drawPortal);
+
+    // Label
+    this.add.text(x, y - 44, '✦ ZONE FINALE', {
+      fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold',
+      color: '#ffdd00', stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(5);
+
+    this.cameras.main.shake(600, 0.02);
+    this.cameras.main.flash(300, 80, 0, 120, true);
+  }
+
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
@@ -322,6 +440,7 @@ export class GameScene extends Phaser.Scene {
     if (!uiOpen) {
       this._player.update(time, delta);
       this._handleBaseInput();
+      this._checkFinalGateInteract();
     }
 
     this._dayNight.update(delta);
