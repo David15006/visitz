@@ -15,6 +15,7 @@ import { BossHPBar }      from '../ui/BossHPBar.js';
 import { PlayerHUD }      from '../ui/PlayerHUD.js';
 import { Notification }   from '../ui/Notification.js';
 import { GameConfig }     from '../config/GameConfig.js';
+import { QuestPanel }     from '../ui/QuestPanel.js';
 
 const W = GameConfig.WIDTH;
 const H = GameConfig.HEIGHT;
@@ -56,6 +57,11 @@ export class FinalZoneScene extends Phaser.Scene {
     this._buildHUD();
     this._buildDarkness();
     this._setupEvents();
+
+    // Panneau de quêtes
+    if (window.__quests) {
+      this._questPanel = new QuestPanel(this, window.__quests);
+    }
 
     // Cinématique d'entrée avant de commencer le combat
     this.cameras.main.fadeIn(1500, 0, 0, 0);
@@ -362,6 +368,7 @@ export class FinalZoneScene extends Phaser.Scene {
   _onBossDeath() {
     this._bossDefeated  = true;
     this._cinemaPlaying = true;
+    this.game.events.emit('quest:kill_final');
     this._boss          = null;
 
     this._bossHPBar?.hide();

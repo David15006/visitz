@@ -169,6 +169,7 @@ export class Shop {
     const weapon = new entry.ItemClass();
     this._inv.add(weapon);
     this._showFeedback(`${weapon.name} achete !`, '#88ff88');
+    this._scene.game.events.emit('quest:buy_weapon');
   }
 
   _showFeedback(text, color) {

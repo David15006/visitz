@@ -19,6 +19,8 @@ import { HUD }              from '../ui/HUD.js';
 import { PlayerHUD }        from '../ui/PlayerHUD.js';
 import { Notification }     from '../ui/Notification.js';
 import { Bat }              from '../entities/items/Bat.js';
+import { QuestSystem }     from '../systems/QuestSystem.js';
+import { QuestPanel }      from '../ui/QuestPanel.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -78,6 +80,7 @@ export class GameScene extends Phaser.Scene {
     this._buildReturnKey();
     this._buildSewerGrate();
     this._buildFinalGate();
+    this._initQuests();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
@@ -161,7 +164,13 @@ export class GameScene extends Phaser.Scene {
     this._dayNight = new DayNightCycle(this, (phase) => {
       if (!this._audio) return;
       if (phase === 'night')   this._audio.transitionToNight();
-      if (phase === 'day')     this._audio.transitionToDay();
+      if (phase === 'day') {
+        this._audio.transitionToDay();
+        // Première nuit survécue : au lever du jour 2
+        if (this._dayNight.dayCount >= 2) {
+          this.game.events.emit('quest:first_night');
+        }
+      }
     });
   }
 
@@ -239,6 +248,7 @@ export class GameScene extends Phaser.Scene {
             '#cc00ff',
             5000
           );
+          this.game.events.emit('quest:kill_boss');
         },
       }
     );
@@ -442,6 +452,16 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(300, 80, 0, 120, true);
   }
 
+  // ── Système de quêtes ─────────────────────────────────────────────────────
+
+  _initQuests() {
+    // Créer ou réutiliser le singleton global
+    if (!window.__quests) {
+      window.__quests = new QuestSystem(this.game);
+    }
+    this._questPanel = new QuestPanel(this, window.__quests);
+  }
+
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
@@ -506,6 +526,7 @@ export class GameScene extends Phaser.Scene {
           if (this._player.inventory.countByKey('sewer_key') > 0) {
             this._player.inventory.removeByKey('sewer_key');
             if (this._audio) this._audio.stop();
+            this.game.events.emit('quest:enter_sewer');
             this.cameras.main.fadeOut(400, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () => {
               this.scene.start('DungeonScene');

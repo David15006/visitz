@@ -22,6 +22,7 @@ import { GameConfig }      from '../config/GameConfig.js';
 import { Notification }    from '../ui/Notification.js';
 import { PlayerHUD }       from '../ui/PlayerHUD.js';
 import { BossHPBar }       from '../ui/BossHPBar.js';
+import { QuestPanel }      from '../ui/QuestPanel.js';
 
 const W = GameConfig.WIDTH;
 const H = GameConfig.HEIGHT;
@@ -100,6 +101,11 @@ export class DungeonScene extends Phaser.Scene {
 
     this._notification = new Notification(this);
     this._notification.show('Vous entrez dans les Égouts…', '#88aaff', 3000);
+
+    // Panneau de quêtes
+    if (window.__quests) {
+      this._questPanel = new QuestPanel(this, window.__quests);
+    }
   }
 
   // ── Joueur ───────────────────────────────────────────────────────────────────
@@ -519,6 +525,7 @@ export class DungeonScene extends Phaser.Scene {
   _onRatKingDeath() {
     this._bossDefeated  = true;
     this._victoryPlaying = true;
+    this.game.events.emit('quest:kill_ratking');
 
     this._bossHPBar?.hide();
     this._stopBossMusic();

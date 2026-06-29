@@ -65,6 +65,7 @@ export class Survivor {
     const price = food.sellPrice;
     inv.removeByKey(food.key, 1);
     this._player.stats.addCoins(price);
+    this._scene.game.events.emit('quest:sell_dish');
 
     this._bubble.setText(`Merci beaucoup !\n${food.name} - ${price} pieces`);
 
