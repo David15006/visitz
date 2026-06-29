@@ -1,12 +1,15 @@
 /**
  * GameScene.js
  * Scène principale de jeu.
- * Contient : la grande carte avec grille, le joueur, la caméra qui suit,
- * les limites physiques du monde, et le HUD de debug.
+ * Orchestre : WorldMap, Player, DayNightCycle, AudioManager, HUD.
  */
 
 import { GameConfig } from '../config/GameConfig.js';
-import { Player } from '../entities/Player.js';
+import { Player }        from '../entities/Player.js';
+import { WorldMap }      from '../world/WorldMap.js';
+import { DayNightCycle } from '../systems/DayNightCycle.js';
+import { AudioManager }  from '../systems/AudioManager.js';
+import { HUD }           from '../ui/HUD.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -14,106 +17,95 @@ export class GameScene extends Phaser.Scene {
 
     /** @type {Player} */
     this._player = null;
+    /** @type {DayNightCycle} */
+    this._dayNight = null;
+    /** @type {AudioManager} */
+    this._audio = null;
+    /** @type {HUD} */
+    this._hud = null;
   }
 
   create() {
     const { MAP_WIDTH, MAP_HEIGHT } = GameConfig;
 
-    // Définir les limites du monde physique (taille de la carte)
+    // Limites du monde physique (collision avec les bords)
     this.physics.world.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-    this._buildMap(MAP_WIDTH, MAP_HEIGHT);
+    // ── Ordre de construction (important pour les depths) ──────────────
+    this._buildMap();
     this._buildPlayer(MAP_WIDTH, MAP_HEIGHT);
     this._setupCamera(MAP_WIDTH, MAP_HEIGHT);
+    this._buildDayNight();   // après la caméra (overlay suit l'écran)
     this._buildHUD();
+    this._buildAudio();
     this._buildReturnKey();
 
-    // Fondu d'entrée
-    this.cameras.main.fadeIn(400, 0, 0, 0);
+    this.cameras.main.fadeIn(500, 0, 0, 0);
   }
 
-  /** Dessine la grande carte : fond + grille de tuiles + bordure */
-  _buildMap(w, h) {
-    // Fond uni
-    this.add.rectangle(w / 2, h / 2, w, h, GameConfig.MAP.BG_COLOR);
-
-    // Grille de tuiles via TileSprite (performant, une seule draw call)
-    this.add.tileSprite(w / 2, h / 2, w, h, 'tile');
-
-    // Bordure visible de la carte
-    const border = this.add.graphics();
-    border.lineStyle(4, 0xe94560, 0.8);
-    border.strokeRect(2, 2, w - 4, h - 4);
-
-    // Marqueurs de coins pour repère visuel
-    const markerColor = 0xffffff;
-    const markerSize = 20;
-    [
-      [0, 0], [w, 0], [0, h], [w, h],
-    ].forEach(([mx, my]) => {
-      border.fillStyle(markerColor, 0.4);
-      border.fillRect(mx - markerSize / 2, my - markerSize / 2, markerSize, markerSize);
-    });
-
-    // Centre de la carte (repère visuel)
-    const cx = this.add.graphics();
-    cx.fillStyle(0xe94560, 0.3);
-    cx.fillCircle(w / 2, h / 2, 40);
-    cx.lineStyle(2, 0xe94560, 0.6);
-    cx.strokeCircle(w / 2, h / 2, 60);
-    this.add.text(w / 2, h / 2, 'CENTRE', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#e94560',
-    }).setOrigin(0.5);
+  /** Construit la carte du monde */
+  _buildMap() {
+    new WorldMap(this);
   }
 
-  /** Crée et place le joueur au centre de la carte */
+  /** Crée le joueur au centre de la carte */
   _buildPlayer(w, h) {
-    this._player = new Player(this, w / 2, h / 2);
+    // Spawn au centre de la zone Base
+    const base = { x: 1600, y: 1200 };
+    this._player = new Player(this, base.x, base.y);
+    // Le joueur doit être au-dessus du décor
+    this._player.setDepth(10);
   }
 
-  /** Configure la caméra principale pour suivre le joueur dans les limites */
+  /** Configure la caméra avec suivi doux et déadzone */
   _setupCamera(mapW, mapH) {
     const cam = this.cameras.main;
-
-    // Limites de défilement = limites de la carte
     cam.setBounds(0, 0, mapW, mapH);
-
-    // Suivi du joueur avec lerp (glissement doux)
-    cam.startFollow(this._player, true, 0.1, 0.1);
-
-    // Légère zone morte pour éviter les micro-tremblements
-    cam.setDeadzone(60, 40);
+    cam.startFollow(this._player, true, 0.09, 0.09);
+    cam.setDeadzone(80, 50);
   }
 
-  /** HUD fixe (indépendant de la caméra) : coordonnées joueur + aide touches */
+  /** Crée le cycle jour/nuit et branche le callback audio */
+  _buildDayNight() {
+    this._dayNight = new DayNightCycle(this, (phase) => {
+      this._onPhaseChange(phase);
+    });
+  }
+
+  /** Crée le HUD */
   _buildHUD() {
-    // Utilise une caméra ignorée par la camera principale pour le HUD
-    const hud = this.scene.scene.sys.cameras.main;
-
-    // Texte de coordonnées (mis à jour dans update())
-    this._coordText = this.add.text(12, 12, '', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#aaaacc',
-      backgroundColor: '#00000066',
-      padding: { x: 6, y: 4 },
-    }).setScrollFactor(0).setDepth(100);  // setScrollFactor(0) = fixe à l'écran
-
-    // Aide touches
-    this.add.text(12, GameConfig.HEIGHT - 40, 'ZQSD / Flèches : déplacement   |   Échap : menu', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#555577',
-      backgroundColor: '#00000066',
-      padding: { x: 6, y: 3 },
-    }).setScrollFactor(0).setDepth(100);
+    this._hud = new HUD(this, this._dayNight, this._player);
   }
 
-  /** Touche Échap pour revenir au menu principal */
+  /** Initialise l'audio (démarrage différé au premier geste utilisateur) */
+  _buildAudio() {
+    this._audio = new AudioManager();
+    // L'AudioContext nécessite un geste utilisateur.
+    // La scène est lancée depuis un clic sur "Nouvelle Partie", donc on peut démarrer.
+    try {
+      this._audio.start();
+    } catch (e) {
+      // Silencieusement ignoré si le navigateur bloque avant interaction
+      console.warn('AudioManager: démarrage différé', e.message);
+    }
+  }
+
+  /** Gère les transitions audio lors d'un changement de phase */
+  _onPhaseChange(phase) {
+    if (!this._audio) return;
+    if (phase === 'night') {
+      this._audio.transitionToNight();
+    } else if (phase === 'day') {
+      this._audio.transitionToDay();
+    }
+    // sunset et sunrise : pas de transition abrupte,
+    // le fondu se fera au prochain changement (night / day)
+  }
+
+  /** Touche Échap → retour au menu */
   _buildReturnKey() {
     this.input.keyboard.once('keydown-ESC', () => {
+      if (this._audio) this._audio.stop();
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('MainMenuScene');
@@ -121,13 +113,10 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Boucle principale : met à jour le joueur et le HUD */
-  update() {
+  /** Boucle principale */
+  update(_time, delta) {
     this._player.update();
-
-    // Mise à jour des coordonnées dans le HUD
-    const px = Math.floor(this._player.x);
-    const py = Math.floor(this._player.y);
-    this._coordText.setText(`X: ${px}   Y: ${py}`);
+    this._dayNight.update(delta);
+    this._hud.update();
   }
 }

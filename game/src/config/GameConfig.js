@@ -15,9 +15,9 @@ export const GameConfig = {
 
   // --- Joueur ---
   PLAYER: {
-    SPEED: 220,          // pixels par seconde
-    SIZE: 32,            // taille du carré temporaire (px)
-    COLOR: 0x4fc3f7,     // bleu clair
+    SPEED: 220,
+    SIZE: 32,
+    COLOR: 0x4fc3f7,
     BORDER_COLOR: 0x0288d1,
   },
 
@@ -31,9 +31,37 @@ export const GameConfig = {
     ACCENT: '#e94560',
   },
 
-  // --- Fond de la carte (temporaire) ---
+  // --- Fond de la carte ---
   MAP: {
-    BG_COLOR: 0x1b2838,
+    BG_COLOR: 0x2d4a1e,    // vert herbe foncé
     GRID_COLOR: 0x263340,
+  },
+
+  // --- Cycle jour / nuit ---
+  DAY_NIGHT: {
+    // Durées en millisecondes (temps réel)
+    DAY_MS:   8 * 60 * 1000,   // 8 minutes de jour
+    NIGHT_MS: 4 * 60 * 1000,   // 4 minutes de nuit
+    TRANS_MS: 60 * 1000,        // 1 minute de transition de chaque côté
+
+    // Heure de jeu au démarrage d'un cycle
+    START_HOUR: 6,              // 06:00
+
+    // Vitesse du temps : 2 minutes de jeu par seconde réelle
+    // (16 h de jour en 8 min réelles = 2 gmin/s ; identique la nuit)
+    GAME_MIN_PER_REAL_MS: 2 / 1000,
+
+    // Alpha max de l'overlay nocturne
+    NIGHT_OVERLAY_ALPHA: 0.68,
+
+    // Couleurs de l'overlay (ARGB hex)
+    COLOR_NIGHT:   0x000528,    // bleu nuit
+    COLOR_SUNSET:  0xcc4400,    // orange couchant
+  },
+
+  // --- Audio ---
+  AUDIO: {
+    MASTER_VOLUME: 0.5,
+    MUSIC_FADE_MS: 3000,        // durée du crossfade jour ↔ nuit
   },
 };
