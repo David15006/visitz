@@ -52,6 +52,9 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     // Grognement
     this._groanTimer    = 2000 + Math.random() * 4000; // première émission
 
+    // Attaque des murs (cooldown indépendant du cooldown joueur)
+    this._wallDmgCooldown = 0;
+
     // Items monde (injecté par ZombieSpawner pour le loot)
     this._worldItems = null;
 
@@ -101,7 +104,20 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   }
 
   _updateCooldown(delta) {
-    if (this._cooldown > 0) this._cooldown -= delta;
+    if (this._cooldown > 0)        this._cooldown        -= delta;
+    if (this._wallDmgCooldown > 0) this._wallDmgCooldown -= delta;
+  }
+
+  /**
+   * Appelé par le collider physique quand le zombie touche un mur.
+   * @param {Wall} wall
+   */
+  onWallCollision(wall) {
+    if (this._isDead || !wall?.scene) return;
+    if (this._wallDmgCooldown > 0)    return;
+
+    this._wallDmgCooldown = 2000;
+    wall.takeDamage(this._stats.damage);
   }
 
   _updateState(dist) {

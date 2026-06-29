@@ -32,6 +32,9 @@ export class ZombieSpawner {
 
     this._zombies     = [];
     this._spawnTimer  = CFG.SPAWN_INTERVAL;  // spawn dès la première nuit
+
+    // Groupe Phaser utilisé pour les colliders physiques
+    this._group = scene.add.group();
   }
 
   // ── Mise à jour ──────────────────────────────────────────────────────────
@@ -73,6 +76,7 @@ export class ZombieSpawner {
 
     this._setupAnimations(zombie);
     this._zombies.push(zombie);
+    this._group.add(zombie);
   }
 
   _randomSpawnPos() {
@@ -152,4 +156,5 @@ export class ZombieSpawner {
   }
 
   get zombies() { return this._zombies; }
+  get group()   { return this._group; }
 }

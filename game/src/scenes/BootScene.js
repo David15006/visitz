@@ -33,6 +33,11 @@ export class BootScene extends Phaser.Scene {
     this._createRockTexture();
     this._createGraveTexture();
 
+    // Base : murs, porte, objets intérieurs
+    this._createWallTextures();
+    this._createDoorTextures();
+    this._createInteriorTextures();
+
     // Utilitaires
     this._createParticleTexture();
 
@@ -280,6 +285,183 @@ export class BootScene extends Phaser.Scene {
     gfx.fillCircle(4, 4, 4);
     gfx.generateTexture('particle', 8, 8);
     gfx.destroy();
+  }
+
+  // ── Murs & Porte ─────────────────────────────────────────────────────────
+
+  _createWallTextures() {
+    // Mur horizontal : 64×16 (pierre grise avec joints)
+    const h = this.make.graphics({ add: false });
+    h.fillStyle(0x888888, 1);
+    h.fillRect(0, 0, 64, 16);
+    // Joints horizontaux
+    h.fillStyle(0x555555, 0.6);
+    h.fillRect(0, 7, 64, 2);
+    // Blocs décalés
+    h.fillStyle(0x999999, 0.4);
+    h.fillRect(1, 1, 30, 5);
+    h.fillRect(33, 9, 30, 5);
+    // Bord sombre
+    h.fillStyle(0x333333, 0.5);
+    h.fillRect(0, 0, 64, 2);
+    h.fillRect(0, 14, 64, 2);
+    h.generateTexture('wall_h', 64, 16);
+    h.destroy();
+
+    // Mur vertical : 16×64
+    const v = this.make.graphics({ add: false });
+    v.fillStyle(0x888888, 1);
+    v.fillRect(0, 0, 16, 64);
+    // Joint vertical
+    v.fillStyle(0x555555, 0.6);
+    v.fillRect(7, 0, 2, 64);
+    // Blocs décalés
+    v.fillStyle(0x999999, 0.4);
+    v.fillRect(1, 1, 5, 30);
+    v.fillRect(9, 33, 5, 30);
+    // Bords
+    v.fillStyle(0x333333, 0.5);
+    v.fillRect(0, 0, 2, 64);
+    v.fillRect(14, 0, 2, 64);
+    v.generateTexture('wall_v', 16, 64);
+    v.destroy();
+  }
+
+  _createDoorTextures() {
+    // Porte fermée : planches en bois (64×16)
+    const dc = this.make.graphics({ add: false });
+    dc.fillStyle(0x7a4a1a, 1);
+    dc.fillRect(0, 0, 64, 16);
+    // Planches verticales
+    dc.fillStyle(0x5c3a10, 0.5);
+    dc.fillRect(15, 0, 2, 16);
+    dc.fillRect(31, 0, 2, 16);
+    dc.fillRect(47, 0, 2, 16);
+    // Traverse horizontale
+    dc.fillStyle(0x5c3a10, 0.7);
+    dc.fillRect(0, 7, 64, 2);
+    // Reflet
+    dc.fillStyle(0xcc8833, 0.25);
+    dc.fillRect(1, 1, 62, 4);
+    // Poignée
+    dc.fillStyle(0xccaa33, 1);
+    dc.fillRect(29, 10, 6, 3);
+    dc.generateTexture('door_closed', 64, 16);
+    dc.destroy();
+
+    // Porte ouverte : cadre transparent (64×16)
+    const do_ = this.make.graphics({ add: false });
+    do_.fillStyle(0x7a4a1a, 0.25);
+    do_.fillRect(0, 0, 64, 4);
+    do_.fillRect(0, 12, 64, 4);
+    do_.generateTexture('door_open', 64, 16);
+    do_.destroy();
+  }
+
+  _createInteriorTextures() {
+    // Coffre (40×28)
+    const chest = this.make.graphics({ add: false });
+    chest.fillStyle(0x7a5a2a, 1);
+    chest.fillRect(0, 8, 40, 20);
+    chest.fillStyle(0x9b7a3a, 1);
+    chest.fillRect(0, 0, 40, 12);
+    chest.fillStyle(0x555555, 1);
+    chest.fillRect(0, 10, 40, 3);
+    chest.fillStyle(0xccaa33, 1);
+    chest.fillRect(17, 7, 6, 8);
+    chest.fillStyle(0x333333, 0.3);
+    chest.fillRect(1, 9, 38, 18);
+    chest.generateTexture('obj_chest', 40, 28);
+    chest.destroy();
+
+    // Cuisine (44×44)
+    const kitchen = this.make.graphics({ add: false });
+    kitchen.fillStyle(0x555566, 1);
+    kitchen.fillRect(0, 0, 44, 44);
+    kitchen.fillStyle(0x333344, 0.8);
+    kitchen.fillRect(2, 2, 20, 20);
+    kitchen.fillRect(22, 2, 20, 20);
+    kitchen.fillRect(2, 22, 40, 20);
+    // Feux
+    kitchen.fillStyle(0xff6622, 0.8);
+    kitchen.fillCircle(12, 12, 6);
+    kitchen.fillStyle(0xff9933, 0.6);
+    kitchen.fillCircle(12, 12, 3);
+    kitchen.fillStyle(0xff6622, 0.8);
+    kitchen.fillCircle(32, 12, 6);
+    // Plan de travail
+    kitchen.fillStyle(0x888899, 0.5);
+    kitchen.fillRect(3, 23, 38, 18);
+    kitchen.generateTexture('obj_kitchen', 44, 44);
+    kitchen.destroy();
+
+    // Établi (48×32)
+    const wb = this.make.graphics({ add: false });
+    wb.fillStyle(0x6b4a1a, 1);
+    wb.fillRect(0, 8, 48, 24);
+    wb.fillStyle(0x9b7a3a, 1);
+    wb.fillRect(0, 0, 48, 10);
+    // Outils dessinés
+    wb.fillStyle(0x888888, 1);
+    wb.fillRect(6, 12, 10, 3);
+    wb.fillRect(32, 12, 10, 3);
+    wb.fillRect(6, 22, 6, 3);
+    wb.fillStyle(0xaaaa44, 1);
+    wb.fillRect(20, 14, 8, 10);
+    // Pieds
+    wb.fillStyle(0x4a3010, 1);
+    wb.fillRect(4,  30, 6, 2);
+    wb.fillRect(38, 30, 6, 2);
+    wb.generateTexture('obj_workbench', 48, 32);
+    wb.destroy();
+
+    // Borne boutique (32×44)
+    const shop = this.make.graphics({ add: false });
+    shop.fillStyle(0x1a2a4a, 1);
+    shop.fillRect(0, 0, 32, 44);
+    // Écran
+    shop.fillStyle(0x2244aa, 0.9);
+    shop.fillRect(4, 4, 24, 20);
+    shop.fillStyle(0x44aaff, 0.5);
+    shop.fillRect(5, 5, 22, 18);
+    // Clavier
+    shop.fillStyle(0x333333, 1);
+    shop.fillRect(4, 28, 24, 10);
+    for (let i = 0; i < 6; i++) {
+      shop.fillStyle(0x555555, 1);
+      shop.fillRect(6 + i * 4, 30, 3, 3);
+      shop.fillRect(6 + i * 4, 34, 3, 3);
+    }
+    // Logo €
+    shop.fillStyle(0xffdd00, 1);
+    shop.fillRect(13, 8, 6, 2);
+    shop.fillRect(10, 12, 8, 2);
+    shop.fillRect(13, 16, 6, 2);
+    shop.generateTexture('obj_shop', 32, 44);
+    shop.destroy();
+
+    // Étal de vente (52×28)
+    const stall = this.make.graphics({ add: false });
+    stall.fillStyle(0xaa7722, 1);
+    stall.fillRect(0, 12, 52, 16);
+    // Toit de l'étal
+    stall.fillStyle(0xcc3333, 1);
+    stall.fillRect(0, 0, 52, 10);
+    // Bandes blanches
+    stall.fillStyle(0xffffff, 0.5);
+    stall.fillRect(0, 2, 8, 6);
+    stall.fillRect(16, 2, 8, 6);
+    stall.fillRect(32, 2, 8, 6);
+    stall.fillRect(48, 2, 4, 6);
+    // Marchandises
+    stall.fillStyle(0x44aa44, 0.8);
+    stall.fillCircle(12, 18, 4);
+    stall.fillStyle(0xcc3333, 0.8);
+    stall.fillCircle(26, 18, 4);
+    stall.fillStyle(0xeecc22, 0.8);
+    stall.fillCircle(40, 18, 4);
+    stall.generateTexture('obj_stall', 52, 28);
+    stall.destroy();
   }
 
   // ── Zombies ───────────────────────────────────────────────────────────────

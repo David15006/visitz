@@ -52,7 +52,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this._cursors = scene.input.keyboard.createCursorKeys();
     this._keys    = scene.input.keyboard.addKeys({
       Z: KEY.Z, Q: KEY.Q, S: KEY.S, D: KEY.D,
-      E: KEY.E,
+      E: KEY.E, R: KEY.R, F: KEY.F,
       ONE: KEY.ONE, TWO: KEY.TWO, THREE: KEY.THREE, FOUR: KEY.FOUR,
       FIVE: KEY.FIVE, SIX: KEY.SIX, SEVEN: KEY.SEVEN, EIGHT: KEY.EIGHT,
     });
@@ -86,6 +86,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   setWorldItems(group) {
     this._worldItems = group;
   }
+
+  get nearbyItem() { return this._nearbyItem; }
+  get keys()       { return this._keys; }
 
   /** Enregistre toutes les animations (utilise des textures de clés différentes par frame) */
   _registerAnimations(scene) {

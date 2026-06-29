@@ -6,6 +6,7 @@
 import { GameConfig }    from '../config/GameConfig.js';
 import { Player }        from '../entities/Player.js';
 import { WorldMap }      from '../world/WorldMap.js';
+import { Base }          from '../world/Base.js';
 import { DayNightCycle } from '../systems/DayNightCycle.js';
 import { AudioManager }  from '../systems/AudioManager.js';
 import { SoundManager }  from '../systems/SoundManager.js';
@@ -32,6 +33,8 @@ export class GameScene extends Phaser.Scene {
     this._sound = null;
     /** @type {ZombieSpawner} */
     this._spawner = null;
+    /** @type {Base} */
+    this._base = null;
 
     // Groupe d'items ramassables du monde
     this._worldItems = null;
@@ -44,6 +47,7 @@ export class GameScene extends Phaser.Scene {
 
     // Ordre de création (respecte les depths)
     this._buildMap();
+    this._buildBase();
     this._spawnWorldItems();
     this._buildPlayer(W, H);
     this._setupCamera(W, H);
@@ -51,6 +55,7 @@ export class GameScene extends Phaser.Scene {
     this._buildHUDs();
     this._buildAudio();
     this._buildZombies();
+    this._setupPhysics();
     this._buildReturnKey();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
@@ -60,6 +65,12 @@ export class GameScene extends Phaser.Scene {
 
   _buildMap() {
     new WorldMap(this);
+  }
+
+  // ── Base ──────────────────────────────────────────────────────────────────
+
+  _buildBase() {
+    this._base = new Base(this);
   }
 
   // ── Items du monde ────────────────────────────────────────────────────────
@@ -109,7 +120,8 @@ export class GameScene extends Phaser.Scene {
   // ── Joueur ────────────────────────────────────────────────────────────────
 
   _buildPlayer(w, h) {
-    this._player = new Player(this, 1600, 1200);
+    // Spawn légèrement au nord du centre (stall au centre)
+    this._player = new Player(this, 1600, 1165);
     this._player.setWorldItems(this._worldItems);
   }
 
@@ -167,6 +179,20 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ── Colliders physiques ────────────────────────────────────────────────────
+
+  _setupPhysics() {
+    // Joueur bloqué par les murs
+    this.physics.add.collider(this._player, this._base.wallsGroup);
+
+    // Zombies bloqués par les murs + callback d'attaque de mur
+    this.physics.add.collider(
+      this._spawner.group,
+      this._base.wallsGroup,
+      (zombie, wall) => zombie.onWallCollision(wall)
+    );
+  }
+
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
@@ -185,8 +211,29 @@ export class GameScene extends Phaser.Scene {
     this._player.update(time, delta);
     this._dayNight.update(delta);
     this._spawner.update(delta, this._dayNight.isNight);
+    this._base.update(delta, this._player.x, this._player.y);
     this._hud.update();
     this._playerHUD.update();
     this._sound?.resume();
+    this._handleBaseInput();
+  }
+
+  _handleBaseInput() {
+    const keys = this._player.keys;
+
+    // F → porte
+    if (Phaser.Input.Keyboard.JustDown(keys.F)) {
+      this._base.toggleDoor(this._player.x, this._player.y);
+    }
+
+    // R → réparer mur
+    if (Phaser.Input.Keyboard.JustDown(keys.R)) {
+      this._base.repairNear(this._player.x, this._player.y);
+    }
+
+    // E → objet intérieur (si pas d'item monde à portée)
+    if (Phaser.Input.Keyboard.JustDown(keys.E) && !this._player.nearbyItem) {
+      this._base.interactNear(this._player.x, this._player.y);
+    }
   }
 }
