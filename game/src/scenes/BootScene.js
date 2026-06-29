@@ -20,6 +20,12 @@ export class BootScene extends Phaser.Scene {
     // Items
     this._createBatWorldTexture();
     this._createBatIconTexture();
+    this._createMeatTextures();
+
+    // Zombies : 6 frames × 3 types
+    this._createZombieFrames('zn', 0x4a7a2e, 0x2d5a1a, 0xcc3333); // normal : vert + rouge
+    this._createZombieFrames('zf', 0x7a9a2e, 0x4a6a10, 0x3399cc); // fast : vert clair + bleu
+    this._createZombieFrames('zt', 0x3a5a20, 0x1a3a08, 0x993300); // tank : vert foncé + orange
 
     // Décor
     this._createTileTexture();
@@ -274,5 +280,125 @@ export class BootScene extends Phaser.Scene {
     gfx.fillCircle(4, 4, 4);
     gfx.generateTexture('particle', 8, 8);
     gfx.destroy();
+  }
+
+  // ── Zombies ───────────────────────────────────────────────────────────────
+
+  /**
+   * Génère 6 frames pour un type de zombie (4 marche + 2 attaque).
+   * @param {string} pfx       - 'zn' | 'zf' | 'zt'
+   * @param {number} bodyColor - couleur principale du corps
+   * @param {number} darkColor - couleur ombre / détails
+   * @param {number} eyeColor  - couleur yeux
+   */
+  _createZombieFrames(pfx, bodyColor, darkColor, eyeColor) {
+    // 4 frames de marche (jambes alternées)
+    const walkLegs = [
+      { ll: { x: -4, y: -3 }, rl: { x: 3, y: 3 } },
+      { ll: { x:  0, y:  0 }, rl: { x: 0, y: 0 } },
+      { ll: { x:  4, y:  3 }, rl: { x:-3, y:-3 } },
+      { ll: { x:  0, y:  0 }, rl: { x: 0, y: 0 } },
+    ];
+    walkLegs.forEach((leg, i) =>
+      this._drawZombieFrame(`${pfx}_walk_${i}`, bodyColor, darkColor, eyeColor, leg.ll, leg.rl, false)
+    );
+
+    // 2 frames d'attaque (bras levés)
+    this._drawZombieFrame(`${pfx}_atk_0`, bodyColor, darkColor, eyeColor, { x: 0, y: 0 }, { x: 0, y: 0 }, true);
+    this._drawZombieFrame(`${pfx}_atk_1`, bodyColor, darkColor, eyeColor, { x:-2, y: 1 }, { x: 2, y: 1 }, true);
+  }
+
+  _drawZombieFrame(key, bodyColor, darkColor, eyeColor, ll, rl, attacking) {
+    const gfx = this.make.graphics({ add: false });
+    const cx  = 20; // centre X (sprite 40×48)
+
+    // Ombre
+    gfx.fillStyle(0x000000, 0.2);
+    gfx.fillEllipse(cx, 46, 28, 8);
+
+    // Jambes
+    gfx.fillStyle(0x2a2a2a, 1);
+    gfx.fillEllipse(cx - 7 + ll.x, 37 + ll.y, 10, 13);
+    gfx.fillEllipse(cx + 7 + rl.x, 37 + rl.y, 10, 13);
+
+    // Corps
+    gfx.fillStyle(bodyColor, 1);
+    gfx.fillRoundedRect(cx - 11, 20, 22, 18, 4);
+
+    // Ombre corps
+    gfx.fillStyle(darkColor, 0.5);
+    gfx.fillRoundedRect(cx + 4, 21, 7, 16, 3);
+
+    if (attacking) {
+      // Bras levés
+      gfx.fillStyle(0xb8a080, 1);
+      gfx.fillEllipse(cx - 14, 20, 9, 14);
+      gfx.fillEllipse(cx + 14, 20, 9, 14);
+    } else {
+      // Bras pendants
+      gfx.fillStyle(0xb8a080, 1);
+      gfx.fillEllipse(cx - 13, 27, 8, 14);
+      gfx.fillEllipse(cx + 13, 27, 8, 14);
+    }
+
+    // Tête (peau verdâtre)
+    gfx.fillStyle(0xa8b878, 1);
+    gfx.fillCircle(cx, 13, 11);
+
+    // Cheveux hirsutes
+    gfx.fillStyle(darkColor, 1);
+    gfx.fillRect(cx - 10, 5, 20, 6);
+    gfx.fillRect(cx - 11, 6, 4, 4);
+    gfx.fillRect(cx + 7, 6, 4, 4);
+
+    // Yeux (lueur)
+    gfx.fillStyle(eyeColor, 1);
+    gfx.fillCircle(cx - 4, 12, 3);
+    gfx.fillCircle(cx + 4, 12, 3);
+    gfx.fillStyle(0xffffff, 0.6);
+    gfx.fillCircle(cx - 3, 11, 1.2);
+    gfx.fillCircle(cx + 5, 11, 1.2);
+
+    // Bouche (dents)
+    gfx.fillStyle(0x222222, 0.8);
+    gfx.fillRect(cx - 4, 17, 8, 3);
+    gfx.fillStyle(0xffffff, 0.9);
+    gfx.fillRect(cx - 3, 17, 2, 2);
+    gfx.fillRect(cx,     17, 2, 2);
+
+    gfx.generateTexture(key, 40, 48);
+    gfx.destroy();
+  }
+
+  // ── Viande ────────────────────────────────────────────────────────────────
+
+  _createMeatTextures() {
+    // Sprite monde (ramassable)
+    const wg = this.make.graphics({ add: false });
+    wg.fillStyle(0x000000, 0.18);
+    wg.fillEllipse(14, 17, 24, 7);
+    // Morceau de viande
+    wg.fillStyle(0xcc3333, 1);
+    wg.fillEllipse(14, 12, 22, 16);
+    wg.fillStyle(0xff6655, 0.6);
+    wg.fillEllipse(10, 10, 10, 7);
+    wg.fillStyle(0x882222, 0.5);
+    wg.fillEllipse(18, 14, 8, 5);
+    // Reflet
+    wg.fillStyle(0xff9999, 0.35);
+    wg.fillEllipse(9, 8, 7, 4);
+    wg.generateTexture('meat_world', 28, 20);
+    wg.destroy();
+
+    // Icône inventaire (24×24)
+    const ig = this.make.graphics({ add: false });
+    ig.fillStyle(0xcc3333, 1);
+    ig.fillEllipse(12, 12, 18, 14);
+    ig.fillStyle(0xff6655, 0.6);
+    ig.fillEllipse(9, 9, 8, 6);
+    ig.fillStyle(0xff9999, 0.35);
+    ig.fillEllipse(8, 8, 5, 3);
+    ig.generateTexture('icon_meat', 24, 24);
+    ig.destroy();
   }
 }

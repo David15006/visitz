@@ -1,6 +1,6 @@
 /**
  * GameConfig.js
- * Constantes globales du jeu : dimensions, couleurs, vitesses, etc.
+ * Constantes globales du jeu.
  */
 
 export const GameConfig = {
@@ -14,21 +14,43 @@ export const GameConfig = {
 
   // --- Joueur : déplacement ---
   PLAYER: {
-    SPEED: 210,                  // vitesse marche (px/s)
-    SPRINT_SPEED: 370,           // vitesse course (px/s)
+    SPEED: 210,
+    SPRINT_SPEED: 370,
     SPRITE_W: 40,
     SPRITE_H: 48,
-    HITBOX_RADIUS: 13,           // rayon du cercle de collision
-    PICKUP_RANGE: 70,            // distance de ramassage (px)
+    HITBOX_RADIUS: 13,
+    PICKUP_RANGE: 70,
+    IFRAMES_MS: 650,        // ms d'invincibilité après un coup reçu
   },
 
   // --- Stats joueur ---
   PLAYER_STATS: {
     MAX_HEALTH: 100,
     MAX_STAMINA: 100,
-    STAMINA_DRAIN:  28,          // par seconde en sprint
-    STAMINA_REGEN:  14,          // par seconde hors sprint
-    EXHAUSTED_THRESHOLD: 25,     // seuil de récupération après épuisement
+    STAMINA_DRAIN: 28,
+    STAMINA_REGEN: 14,
+    EXHAUSTED_THRESHOLD: 25,
+  },
+
+  // --- Zombies ---
+  ZOMBIES: {
+    MAX_ACTIVE:     10,
+    SPAWN_MIN_DIST: 540,     // distance min de spawn par rapport au joueur
+    SPAWN_MAX_DIST: 820,
+    SPAWN_INTERVAL: 12000,   // ms entre deux vagues
+
+    NORMAL: {
+      hp: 60,  speed: 68,  damage: 15, cooldown: 1500,
+      detect: 310, range: 50, hitbox: 14,
+    },
+    FAST: {
+      hp: 30,  speed: 145, damage: 10, cooldown:  700,
+      detect: 360, range: 44, hitbox: 11,
+    },
+    TANK: {
+      hp: 160, speed: 36,  damage: 30, cooldown: 2200,
+      detect: 250, range: 62, hitbox: 18,
+    },
   },
 
   // --- Couleurs de l'interface ---
@@ -63,5 +85,6 @@ export const GameConfig = {
   AUDIO: {
     MASTER_VOLUME: 0.5,
     MUSIC_FADE_MS: 3000,
+    SFX_VOLUME: 0.4,
   },
 };

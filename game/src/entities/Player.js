@@ -58,6 +58,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
     this._shiftKey = scene.input.keyboard.addKey(KEY.SHIFT);
 
+    // Invincibilité après coup reçu
+    this._iframes = 0;
+
     // Attaque au clic gauche
     scene.input.on('pointerdown', (ptr) => {
       if (ptr.leftButtonDown()) this._tryAttack();
@@ -154,6 +157,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this._updateAttackCooldown(delta);
     this._handlePickup();
     this._updatePickupHint();
+    if (this._iframes > 0) this._iframes -= delta;
   }
 
   // ── Visée ──────────────────────────────────────────────────────────────────
@@ -236,10 +240,57 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.play('p-attack', true);
 
-    // Arc visuel décalé à l'impact (frame 2 ≈ 200ms)
+    // Arc visuel + détection des zombies au moment de l'impact (≈ 200ms)
     this.scene.time.delayedCall(200, () => {
       this._showAttackArc(weapon);
+      this.emit('attack', this.attackInfo);
     });
+  }
+
+  /**
+   * Reçoit des dégâts d'un zombie (ignorés pendant les iframes).
+   * @param {number} amount
+   */
+  takeDamage(amount) {
+    if (this._iframes > 0) return;
+    this._iframes = PC.IFRAMES_MS;
+
+    this.stats.health = Math.max(0, this.stats.health - amount);
+
+    // Flash rouge du sprite
+    this.setTint(0xff3333);
+    this.scene.time.delayedCall(180, () => this.clearTint());
+
+    // Secousse caméra légère
+    this.scene.cameras.main.shake(160, 0.006);
+
+    // Texte flottant
+    const t = this.scene.add.text(this.x, this.y - 50, `-${amount}`, {
+      fontFamily: 'monospace',
+      fontSize: '16px',
+      fontStyle: 'bold',
+      color: '#ff4444',
+      stroke: '#000',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(25);
+    this.scene.tweens.add({
+      targets: t, y: t.y - 30, alpha: 0, duration: 900,
+      ease: 'Power2', onComplete: () => t.destroy(),
+    });
+
+    if (this.stats.hp <= 0) this.emit('dead');
+  }
+
+  get attackInfo() {
+    const weapon = this.inventory.getActive();
+    if (!weapon || weapon.type !== 'weapon') return null;
+    return {
+      x: this.x, y: this.y,
+      angle: this._aimAngle,
+      range: weapon.attackRange,
+      arc:   weapon.attackArc,
+      damage: weapon.damage,
+    };
   }
 
   /** Affiche l'arc d'attaque sur le monde, puis le fait disparaître */

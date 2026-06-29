@@ -142,6 +142,9 @@ export class DayNightCycle {
 
   /** Progession dans le cycle courant (0 à 1) */
   get cycleProgress() { return this._elapsed / CYCLE_MS; }
+
+  /** true uniquement pendant la phase 'night' */
+  get isNight() { return this._currentPhase === 'night'; }
 }
 
 // ── Utilitaire ──────────────────────────────────────────────────────────────

@@ -8,6 +8,8 @@ import { Player }        from '../entities/Player.js';
 import { WorldMap }      from '../world/WorldMap.js';
 import { DayNightCycle } from '../systems/DayNightCycle.js';
 import { AudioManager }  from '../systems/AudioManager.js';
+import { SoundManager }  from '../systems/SoundManager.js';
+import { ZombieSpawner } from '../systems/ZombieSpawner.js';
 import { HUD }           from '../ui/HUD.js';
 import { PlayerHUD }     from '../ui/PlayerHUD.js';
 import { Bat }           from '../entities/items/Bat.js';
@@ -26,6 +28,10 @@ export class GameScene extends Phaser.Scene {
     this._hud      = null;
     /** @type {PlayerHUD} */
     this._playerHUD = null;
+    /** @type {SoundManager} */
+    this._sound = null;
+    /** @type {ZombieSpawner} */
+    this._spawner = null;
 
     // Groupe d'items ramassables du monde
     this._worldItems = null;
@@ -44,6 +50,7 @@ export class GameScene extends Phaser.Scene {
     this._buildDayNight();
     this._buildHUDs();
     this._buildAudio();
+    this._buildZombies();
     this._buildReturnKey();
 
     this.cameras.main.fadeIn(500, 0, 0, 0);
@@ -145,6 +152,21 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // ── Zombies ───────────────────────────────────────────────────────────────
+
+  _buildZombies() {
+    this._sound   = new SoundManager();
+    this._spawner = new ZombieSpawner(this, this._player, this._sound, this._worldItems);
+
+    // Quand le joueur attaque, déléguer la détection au spawner
+    this._player.on('attack', (info) => {
+      if (!info) return;
+      this._spawner.handlePlayerAttack(
+        info.x, info.y, info.angle, info.range, info.arc, info.damage
+      );
+    });
+  }
+
   // ── Touche Échap ──────────────────────────────────────────────────────────
 
   _buildReturnKey() {
@@ -162,7 +184,9 @@ export class GameScene extends Phaser.Scene {
   update(time, delta) {
     this._player.update(time, delta);
     this._dayNight.update(delta);
+    this._spawner.update(delta, this._dayNight.isNight);
     this._hud.update();
     this._playerHUD.update();
+    this._sound?.resume();
   }
 }
