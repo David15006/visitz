@@ -1,0 +1,493 @@
+/* EventStaff — design sobre, peu de couleurs, sans animation */
+
+:root {
+  --bg: #f4f5f6;
+  --surface: #ffffff;
+  --text: #1c1c1e;
+  --muted: #6b7280;
+  --border: #dcdde1;
+  --primary: #1f4e5f;
+  --primary-text: #ffffff;
+  --ok: #2f7d4f;
+  --ok-bg: #e6f3ea;
+  --warn: #9a6b00;
+  --warn-bg: #fbf1d9;
+  --danger: #b3261e;
+  --danger-bg: #fbe9e8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+h3 {
+  font-size: 15px;
+  margin: 20px 0 8px;
+}
+
+/* ---------- En-tête / navigation ---------- */
+
+.es-header {
+  background: var(--primary);
+  color: var(--primary-text);
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.es-logo {
+  font-weight: 700;
+  font-size: 17px;
+  margin-right: 8px;
+}
+
+.es-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.es-nav-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--primary-text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.es-nav-btn.active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Mise en page générale ---------- */
+
+.es-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.es-view-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.es-empty {
+  color: var(--muted);
+  padding: 20px 0;
+}
+
+.es-inline-label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.es-inline-label .es-input {
+  margin-top: 4px;
+}
+
+/* ---------- Boutons ---------- */
+
+.es-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.es-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.es-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.es-btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.es-btn-small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.es-btn-tiny {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+/* ---------- Formulaires ---------- */
+
+.es-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.es-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.es-input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+
+.es-search {
+  margin-bottom: 16px;
+}
+
+.es-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.es-fieldset legend {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+.es-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.es-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.es-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Cartes ---------- */
+
+.es-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.es-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.es-card-clickable {
+  cursor: pointer;
+}
+
+.es-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.es-card-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.es-comment {
+  font-size: 13px;
+  color: var(--text);
+  font-style: italic;
+}
+
+.es-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.es-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.es-tag {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 12px;
+  padding: 2px 6px;
+  color: var(--muted);
+}
+
+/* ---------- Badges ---------- */
+
+.es-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.es-badge-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.es-badge-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.es-badge-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.es-badge-muted {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+/* ---------- Tableau de bord ---------- */
+
+.es-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.es-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.es-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.es-stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.es-stat-warn .es-stat-value {
+  color: var(--warn);
+}
+
+.es-stat-ok .es-stat-value {
+  color: var(--ok);
+}
+
+/* ---------- Shift : liste d'affectations ---------- */
+
+.es-assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.es-assign-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+}
+
+.es-assign-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.es-assign-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Modale ---------- */
+
+#es-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.es-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 12px;
+}
+
+.es-modal {
+  background: var(--surface);
+  border-radius: 6px;
+  max-width: 560px;
+  width: 100%;
+  padding: 20px;
+  position: relative;
+}
+
+.es-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* ---------- Export ---------- */
+
+.es-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.es-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.es-table th, .es-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.es-table th {
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ---------- Toast ---------- */
+
+.es-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  z-index: 100;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 600px) {
+  .es-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .es-nav {
+    width: 100%;
+  }
+  .es-nav-btn {
+    flex: 1 1 auto;
+  }
+  .es-card {
+    flex-direction: column;
+  }
+  .es-card-actions {
+    width: 100%;
+  }
+}

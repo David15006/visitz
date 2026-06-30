@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EventStaff — Gestion des shifts événementiels</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="es-header">
+    <span class="es-logo">EventStaff</span>
+    <nav class="es-nav">
+      <button type="button" class="es-nav-btn" data-view="dashboard">Tableau de bord</button>
+      <button type="button" class="es-nav-btn" data-view="students">Étudiants</button>
+      <button type="button" class="es-nav-btn" data-view="events">Événements</button>
+      <button type="button" class="es-nav-btn" data-view="shifts">Shifts</button>
+      <button type="button" class="es-nav-btn" data-view="export">Export</button>
+    </nav>
+  </header>
+
+  <main class="es-main">
+    <section id="view-dashboard" class="es-view"></section>
+    <section id="view-students" class="es-view" hidden></section>
+    <section id="view-events" class="es-view" hidden></section>
+    <section id="view-shifts" class="es-view" hidden></section>
+    <section id="view-export" class="es-view" hidden></section>
+  </main>
+
+  <div id="es-modal-root" hidden></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/sms.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/students.js"></script>
+  <script src="js/views/events.js"></script>
+  <script src="js/views/shifts.js"></script>
+  <script src="js/views/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
