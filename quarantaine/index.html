@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>QUARANTAINE</title>
+<meta name="theme-color" content="#0a0608">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Creepster&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#060504;touch-action:none;-webkit-user-select:none;user-select:none;font-family:'Oswald',sans-serif;}
+#game{position:fixed;top:0;left:0;display:block;z-index:0;}
+#dungeonCanvas{position:fixed;top:0;left:0;display:none;z-index:50;background:transparent;}
+.joystick{position:fixed;bottom:28px;width:124px;height:124px;border-radius:50%;background:radial-gradient(circle at 50% 45%,rgba(255,255,255,0.07),rgba(255,255,255,0.02));border:2px solid rgba(255,255,255,0.18);touch-action:none;z-index:30;}
+#joyLeft{left:26px;}#joyRight{right:26px;}
+.knob{position:absolute;width:54px;height:54px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,rgba(220,60,70,0.55),rgba(120,20,28,0.55));border:2px solid rgba(255,255,255,0.35);pointer-events:none;}
+#weaponHint{position:fixed;right:26px;bottom:160px;z-index:25;color:#d8d2c4;text-align:right;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,0.8);}
+#actionBtn{position:fixed;left:50%;bottom:38px;transform:translateX(-50%);z-index:30;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,80,0.22),rgba(255,160,0,0.08));border:2px solid rgba(255,210,80,0.6);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;font-family:'Oswald',sans-serif;font-size:9px;color:#ffd166;text-align:center;cursor:pointer;opacity:0;transition:opacity .3s;pointer-events:none;}
+#actionBtn.visible{opacity:1;pointer-events:all;}
+#actionBtn .icon{font-size:24px;line-height:1;}
+#timeIndicator{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none;display:flex;align-items:center;gap:8px;font-size:13px;color:#e0d8cc;letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,0.8);}
+#minimap{position:fixed;top:70px;right:14px;z-index:25;pointer-events:none;border:1px solid rgba(255,255,255,0.18);border-radius:4px;background:rgba(0,0,0,0.7);}
+/* Overlays */
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(6,4,3,0.82);flex-direction:column;text-align:center;padding:24px;opacity:1;visibility:visible;transition:opacity .35s ease;overflow-y:auto;backdrop-filter:blur(2px);}
+.overlay.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.title{font-family:'Creepster',cursive;font-size:clamp(48px,13vw,92px);color:#c0212f;letter-spacing:4px;text-shadow:0 0 18px rgba(192,33,47,0.75),0 0 40px rgba(192,33,47,0.35);margin:0 0 6px 0;animation:flicker 3.2s infinite ease-in-out;}
+@keyframes flicker{0%,100%{opacity:1;}45%{opacity:.88;}47%{opacity:1;}52%{opacity:.7;}54%{opacity:1;}}
+.subtitle{color:#968d7d;font-size:15px;letter-spacing:1px;max-width:540px;margin:0 0 20px 0;line-height:1.6;}
+.btn{font-family:'Oswald',sans-serif;font-weight:600;letter-spacing:2px;font-size:18px;color:#f4ede0;background:linear-gradient(180deg,#9c1c27,#5e0f16);border:1px solid rgba(255,255,255,0.18);padding:14px 46px;border-radius:4px;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 18px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.15);transition:transform .1s;}
+.btn:active{transform:translateY(1px);}
+.stats-row{display:flex;gap:28px;margin:18px 0 30px 0;flex-wrap:wrap;justify-content:center;}
+.stat-box .num{font-size:30px;color:#e7dfd2;font-weight:600;}
+.stat-box .lbl{font-size:11px;color:#8a8174;letter-spacing:1px;text-transform:uppercase;}
+.gameover-title{font-family:'Creepster',cursive;font-size:clamp(34px,8vw,56px);color:#8a8174;letter-spacing:2px;margin-bottom:4px;}
+/* Dungeon overlay (separate canvas layer) */
+/* Dungeon overlay handled in main CSS */
+/* Victory screen */
+#victoryScreen{background:radial-gradient(ellipse at center,#0a0820 0%,#030208 80%);}
+.victory-title{font-family:'Creepster',cursive;font-size:clamp(42px,10vw,80px);color:#a080ff;letter-spacing:4px;text-shadow:0 0 20px rgba(160,128,255,0.8);margin-bottom:12px;animation:flicker 2s infinite;}
+/* Craft panel */
+#craftPanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:90;background:rgba(10,8,6,0.97);border:1px solid rgba(192,33,47,0.4);border-radius:8px;padding:20px;min-width:280px;max-width:360px;display:none;}
+#craftPanel.open{display:block;}
+#craftPanel h3{margin:0 0 14px;font-size:18px;color:#e0d8cc;letter-spacing:1px;text-transform:uppercase;}
+.craft-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;color:#a89f90;}
+.craft-item:last-child{border-bottom:none;}
+.craft-item .cost{color:#ffd166;font-size:12px;}
+.craft-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:#f4ede0;background:linear-gradient(180deg,#7a1420,#4a0c14);border:1px solid rgba(255,255,255,0.15);padding:5px 12px;border-radius:3px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;}
+.craft-btn:disabled{opacity:.35;cursor:not-allowed;}
+#closeCraft{position:absolute;top:10px;right:14px;background:none;border:none;color:#6a6460;font-size:20px;cursor:pointer;}
+#shopPanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:90;background:rgba(6,8,14,0.97);border:2px solid rgba(100,200,80,0.5);border-radius:8px;padding:20px;min-width:300px;max-width:380px;display:none;max-height:80vh;overflow-y:auto;}
+#shopPanel.open{display:block;}
+#shopPanel h3{margin:0 0 10px;font-size:18px;color:#80e080;letter-spacing:1px;text-transform:uppercase;}
+#closeShop{position:absolute;top:10px;right:14px;background:none;border:none;color:#6a6460;font-size:20px;cursor:pointer;}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<canvas id="dungeonCanvas"></canvas>
+<canvas id="minimap" width="160" height="100"></canvas>
+<div class="joystick" id="joyLeft"><div class="knob" id="knobLeft"></div></div>
+<div class="joystick" id="joyRight"><div class="knob" id="knobRight"></div></div>
+<div id="timeIndicator"><span id="timeIcon">☀️</span><span id="timeLabel">JOUR 1</span><span id="timePct" style="color:#8a8174;font-size:11px;"></span></div>
+<div id="actionBtn"><div class="icon" id="actionIcon">🔥</div><div id="actionLabel">ACTION</div></div>
+<div id="craftPanel"><button id="closeCraft">✕</button><h3 id="craftTitle">🔥 Feu de camp</h3><div id="craftList"></div></div>
+<div id="shopPanel"><button id="closeShop">✕</button><h3>🏪 ARMURERIE</h3><div style="font-size:11px;color:#70a070;margin-bottom:8px;">Les armes achetées sont conservées même après la mort !</div><div id="shopList"></div></div>
+
+<!-- START -->
+<div class="overlay" id="startScreen">
+  <h1 class="title">QUARANTAINE</h1>
+  <p class="subtitle">Une infection a ravagé la ville. Vous êtes seul, armé d'un pistolet, avec pour seul refuge un vieux feu de camp.<br><br>
+  Survivez le temps qu'il faut — <span style="color:#ffd166;">au bout du 2ème jour</span>, un portail mystérieux s'ouvrira. Ce qui se cache derrière décidera de votre destin.</p>
+  <button class="btn" id="btnStart" style="margin-bottom:16px;">⚔️ Commencer</button>
+  <p style="color:#5a5550;font-size:12px;letter-spacing:.5px;">Stick gauche : déplacer · Stick droit : viser & tirer · Bouton central : interagir<br>Clavier : WASD + souris aussi supportés</p>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay hidden" id="gameOverScreen">
+  <h1 class="gameover-title">VOUS ÊTES TOMBÉ</h1>
+  <p class="subtitle" style="margin-top:0;">L'infection a eu raison de vous.</p>
+  <div class="stats-row">
+    <div class="stat-box"><div class="num" id="statDay">1</div><div class="lbl">Jour atteint</div></div>
+    <div class="stat-box"><div class="num" id="statKills">0</div><div class="lbl">Éliminations</div></div>
+    <div class="stat-box"><div class="num" id="statTime">0s</div><div class="lbl">Temps survécu</div></div>
+  </div>
+  <button class="btn" id="btnRetry">Réessayer</button>
+</div>
+
+<!-- VICTORY -->
+<div class="overlay hidden" id="victoryScreen">
+  <h1 class="victory-title">🏆 VICTOIRE !</h1>
+  <p class="subtitle" style="color:#c0b8e0;">Vous avez vaincu le Boss Final et éradiqué la source de l'infection.<br>La ville peut enfin commencer à guérir.</p>
+  <div class="stats-row">
+    <div class="stat-box"><div class="num" id="vstatKills">0</div><div class="lbl">Éliminations</div></div>
+    <div class="stat-box"><div class="num" id="vstatDay">1</div><div class="lbl">Jours survivécs</div></div>
+    <div class="stat-box"><div class="num" id="vstatTime">0s</div><div class="lbl">Temps total</div></div>
+  </div>
+  <button class="btn" id="btnVictoryRetry" style="background:linear-gradient(180deg,#4a1c9a,#2a0c5a);">🔄 Rejouer</button>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ══════════════════════════════════════════════
+   CANVAS SETUP — 2 canvases : world + dungeon
+══════════════════════════════════════════════ */
+const canvas   = document.getElementById('game');
+const ctx      = canvas.getContext('2d');
+const dCanvas  = document.getElementById('dungeonCanvas');
+const dCtx     = dCanvas.getContext('2d');
+const mmCanvas = document.getElementById('minimap');
+const mmCtx    = mmCanvas.getContext('2d');
+let W=0,H=0;
+function resize(){
+  W=canvas.width=dCanvas.width=window.innerWidth;
+  H=canvas.height=dCanvas.height=window.innerHeight;
+}
+window.addEventListener('resize',resize); resize();
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function rand(a,b){return a+Math.random()*(b-a);}
+function dist(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by);}
+function rrp(c,x,y,w,h,r){
+  c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.arcTo(x+w,y,x+w,y+r,r);
+  c.lineTo(x+w,y+h-r);c.arcTo(x+w,y+h,x+w-r,y+h,r);
+  c.lineTo(x+r,y+h);c.arcTo(x,y+h,x,y+h-r,r);
+  c.lineTo(x,y+r);c.arcTo(x,y,x+r,y,r);c.closePath();
+}
+function formatTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);if(h>0)return`${h}h${m<10?'0':''}${m}m${sec<10?'0':''}${sec}s`;if(m>0)return`${m}m${sec<10?'0':''}${sec}s`;return`${sec}s`;}
+function fmtHUD(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m<10?'0':''}${m}:${sec<10?'0':''}${sec}`;}
+
+/* ══════════════════════════════════════════════
+   WORLD MAP (grande map)
+══════════════════════════════════════════════ */
+const WORLD={w:3600,h:2400};
+const BASE={x:1800,y:1200};
+
+/* ══════════════════════════════════════════════
+   MURS CIRCULAIRES DE LA BASE
+   On génère N segments courbes autour du cercle
+   Le rayon = BASE_LEVELS[baseLevel].radius
+   Une ouverture au sud = la porte
+══════════════════════════════════════════════ */
+const NUM_WALL_SEGS = 16;   // nombre de segments sur le cercle
+const GATE_ANGLE_SIZE = 0.35; // angle (radians) de l'ouverture de la porte
+const GATE_ANGLE = Math.PI / 2; // porte au sud (bas)
+
+let baseWalls = [];
+let gateOpen = false;
+
+function buildBaseWalls(){
+  const r = BASE_LEVELS[baseLevel].radius + 10; // légèrement à l'extérieur du rayon de base
+  const segW = 14; // épaisseur du segment
+  const segLen = (2*Math.PI*r / NUM_WALL_SEGS) * 0.88; // longueur d'un segment (avec gap entre)
+
+  baseWalls = [];
+  for(let i=0; i<NUM_WALL_SEGS; i++){
+    const angle = (i / NUM_WALL_SEGS) * Math.PI * 2;
+    // Vérifier si ce segment est dans la zone de la porte
+    let dGate = Math.abs(angle - GATE_ANGLE);
+    if(dGate > Math.PI) dGate = Math.PI*2 - dGate;
+    const isGate = dGate < GATE_ANGLE_SIZE;
+
+    // Position du centre du segment
+    const cx = BASE.x + Math.cos(angle) * r;
+    const cy = BASE.y + Math.sin(angle) * r;
+
+    // Le segment est perpendiculaire au rayon
+    const perpAngle = angle + Math.PI/2;
+    const hw = segLen / 2;
+    const ht = segW / 2;
+
+    // 4 coins du segment (rectangle orienté)
+    const cos = Math.cos(perpAngle), sin = Math.sin(perpAngle);
+
+    baseWalls.push({
+      // centre du segment
+      cx, cy,
+      angle, // angle sur le cercle
+      perpAngle,
+      // demi-dimensions
+      hw, ht,
+      // AABB approximatif pour collision (légèrement oversized)
+      x: cx - Math.abs(cos)*hw - Math.abs(sin)*ht - 2,
+      y: cy - Math.abs(sin)*hw - Math.abs(cos)*ht - 2,
+      w: (Math.abs(cos)*hw + Math.abs(sin)*ht)*2 + 4,
+      h: (Math.abs(sin)*hw + Math.abs(cos)*ht)*2 + 4,
+      hp: BASE_WALL_MAX_HP,
+      maxHp: BASE_WALL_MAX_HP,
+      isGate,
+      segIndex: i,
+    });
+  }
+}
+
+function getBaseWallObs(){
+  return baseWalls.filter(w=>w.hp>0&&!(w.isGate&&gateOpen))
+    .map(w=>({x:w.x, y:w.y, w:w.w, h:w.h}));
+}
+
+function repairWall(wall){
+  if(!wall||wall.hp>=wall.maxHp) return false;
+  wall.hp=Math.min(wall.maxHp, wall.hp+30);
+  return true;
+}
+
+const worldOuter=[
+  {x:0,y:0,w:3600,h:60},{x:0,y:2340,w:3600,h:60},
+  {x:0,y:0,w:60,h:2400},{x:3540,y:0,w:60,h:2400}
+];
+const worldPillars=[
+  {x:900,y:600,w:60,h:60},{x:2640,y:600,w:60,h:60},
+  {x:900,y:1740,w:60,h:60},{x:2640,y:1740,w:60,h:60},
+  {x:1500,y:1000,w:55,h:55},{x:2100,y:1000,w:55,h:55},
+  {x:1500,y:1400,w:55,h:55},{x:2100,y:1400,w:55,h:55},
+];
+const worldCrates=[
+  {x:400,y:300,w:55,h:55},{x:3100,y:300,w:55,h:55},
+  {x:400,y:2000,w:55,h:55},{x:3100,y:2000,w:55,h:55},
+  {x:1200,y:400,w:50,h:50},{x:2350,y:400,w:50,h:50},
+  {x:1200,y:1950,w:50,h:50},{x:2350,y:1950,w:50,h:50},
+  {x:700,y:1200,w:50,h:40},{x:2850,y:1200,w:50,h:40},
+  {x:1800,y:600,w:55,h:45},{x:1800,y:1750,w:55,h:45},
+];
+const worldHalfWalls=[
+  {x:1300,y:800,w:35,h:320},{x:2265,y:800,w:35,h:320},
+  {x:1100,y:1050,w:280,h:35},{x:2220,y:1050,w:280,h:35},
+];
+const worldStaticObs=[...worldOuter,...worldPillars,...worldCrates,...worldHalfWalls];
+
+// Trees
+const trees=[];
+for(const [tx,ty] of [
+  [300,300],[3300,300],[300,2100],[3300,2100],
+  [700,500],[2900,500],[700,1900],[2900,1900],
+  [600,1200],[3000,1200],[1800,300],[1800,2100],
+  [1100,700],[2500,700],[1100,1700],[2500,1700],
+]){trees.push({x:tx,y:ty,hp:3,maxHp:3});}
+
+// Metal piles
+const metalPiles=[];
+for(const [mx,my] of [
+  [800,900],[2800,900],[800,1500],[2800,1500],
+  [1400,500],[2200,500],[1400,1900],[2200,1900],
+  [1800,800],[1800,1600],[500,1200],[3100,1200],
+]){metalPiles.push({x:mx,y:my});}
+
+// MAISONS — remplacent les coffres, contiennent bois/métal/argent
+const HOUSE_DEFS=[
+  {x:700,y:700},{x:2900,y:700},{x:700,y:1700},{x:2900,y:1700},
+  {x:1400,y:400},{x:2200,y:400},{x:1400,y:2000},{x:2200,y:2000},
+  {x:1100,y:1200},{x:2500,y:1200},
+  {x:500,y:500},{x:3100,y:500},{x:500,y:1900},{x:3100,y:1900},
+];
+let houses=[];
+function spawnHouses(){
+  houses=HOUSE_DEFS.map(h=>({
+    x:h.x, y:h.y,
+    w:70, h:55,
+    looted:false,
+    // Loot aléatoire : ressources seulement
+    loot:{
+      wood:  Math.random()<.7 ? (rand(3,10)|0) : 0,
+      metal: Math.random()<.6 ? (rand(2,7)|0)  : 0,
+      money: Math.random()<.5 ? (rand(5,25)|0) : 0,
+      food:  Math.random()<.4 ? 1 : 0,
+    }
+  }));
+}
+
+// Lights
+const lights=[
+  {x:1800,y:1200,r:350},{x:900,y:650,r:220},{x:2700,y:650,r:220},
+  {x:900,y:1750,r:220},{x:2700,y:1750,r:220},
+  {x:1500,y:900,r:180},{x:2100,y:900,r:180},
+  {x:1500,y:1500,r:180},{x:2100,y:1500,r:180},
+  {x:400,y:1200,r:160},{x:3200,y:1200,r:160},
+].map(l=>({...l,phase:Math.random()*Math.PI*2,flicker:1}));
+
+const floorStains=[];
+for(let i=0;i<400;i++) floorStains.push({x:rand(60,WORLD.w-60),y:rand(60,WORLD.h-60),r:rand(3,20),a:rand(.02,.09)});
+
+// Spawn points
+const spawnPoints=[
+  {x:200,y:200},{x:3400,y:200},{x:200,y:2200},{x:3400,y:2200},
+  {x:1800,y:160},{x:1800,y:2240},{x:160,y:1200},{x:3440,y:1200},
+  {x:600,y:300},{x:3000,y:300},{x:600,y:2100},{x:3000,y:2100},
+];
+
+/* ══════════════════════════════════════════════
+   DUNGEON MAP (couloirs de labo)
+══════════════════════════════════════════════ */
+const DW=2000,DH=1400; // dungeon world size
+// Dungeon rooms and corridors (walls as rects, player navigates through gaps)
+const dungeonWalls=[
+  // outer
+  {x:0,y:0,w:DW,h:40},{x:0,y:DH-40,w:DW,h:40},
+  {x:0,y:0,w:40,h:DH},{x:DW-40,y:0,w:40,h:DH},
+  // horizontal dividers with gaps
+  {x:40,y:340,w:700,h:35},{x:820,y:340,w:800,h:35},{x:1710,y:340,w:250,h:35},
+  {x:40,y:700,w:500,h:35},{x:640,y:700,w:760,h:35},{x:1510,y:700,w:450,h:35},
+  {x:40,y:1060,w:900,h:35},{x:1040,y:1060,w:700,h:35},{x:1840,y:1060,w:120,h:35},
+  // vertical dividers
+  {x:500,y:40,w:35,h:260},{x:500,y:380,w:35,h:280},{x:500,y:740,w:35,h:280},
+  {x:1000,y:40,w:35,h:260},{x:1000,y:380,w:35,h:280},{x:1000,y:740,w:35,h:280},
+  {x:1500,y:40,w:35,h:260},{x:1500,y:380,w:35,h:280},{x:1500,y:740,w:35,h:290},
+  // lab equipment (crates)
+  {x:120,y:100,w:60,h:50},{x:250,y:100,w:60,h:50},{x:700,y:100,w:60,h:50},
+  {x:1200,y:100,w:60,h:50},{x:1700,y:100,w:60,h:50},
+  {x:120,y:440,w:60,h:50},{x:620,y:440,w:60,h:50},{x:1100,y:440,w:60,h:50},
+  {x:600,y:780,w:55,h:55},{x:1100,y:780,w:55,h:55},{x:1600,y:780,w:55,h:55},
+];
+// Boss room: final room bottom center
+const BOSS_ROOM={x:700,y:1120,w:600,h:240}; // interior area
+const BOSS_DOOR={x:DW/2-60,y:1060,w:120,h:35}; // the wall segment that is the door
+const DUNGEON_ENTRY={x:DW/2,y:80};
+const DUNGEON_EXIT_POS={x:DW/2,y:1280};
+const FINAL_BOSS_SPAWN={x:DW/2,y:1250};
+
+const dungeonLights=[
+  {x:500,y:170,r:160},{x:1000,y:170,r:160},{x:1500,y:170,r:160},
+  {x:250,y:520,r:140},{x:750,y:520,r:140},{x:1250,y:520,r:140},{x:1750,y:520,r:140},
+  {x:500,y:880,r:140},{x:1000,y:880,r:140},{x:1500,y:880,r:140},
+  {x:DW/2,y:1220,r:200},
+].map(l=>({...l,phase:Math.random()*Math.PI*2,flicker:1}));
+
+/* ══════════════════════════════════════════════
+   PORTALS & QUEST STATE
+══════════════════════════════════════════════ */
+// Portal 1: Lab portal — appears after 2 days, near base
+const PORTAL1={x:BASE.x+160,y:BASE.y-20,radius:50,open:false,color:'#40a0ff'};
+// Portal 2: Final boss portal — opens after getting the key
+const PORTAL2={x:BASE.x-160,y:BASE.y-20,radius:50,open:false,color:'#c040ff'};
+
+/*
+  QUEST STEPS:
+  0 = survive until day 2 (portal 1 opens)
+  1 = enter portal 1 (go to dungeon)
+  2 = clear dungeon zombies (boss door opens)
+  3 = defeat lab boss → get key → teleport back
+  4 = use key on portal 2 (final portal)
+  5 = defeat final boss → victory
+*/
+let questStep=0;
+let hasKey=false;
+let inDungeon=false;      // true when player is in dungeon
+let dungeonCleared=false; // all dungeon zombies dead (boss door opens)
+let labBossDefeated=false;
+let finalBossSpawned=false;
+let finalBossDefeated=false;
+let dungeonZombies=[];
+let labBoss=null;
+let finalBoss=null;
+let dungeonParticles=[];
+let dungeonPlayer=null;   // copy of player position in dungeon coords
+
+const QUEST_LABELS=[
+  '☀️ Survivez jusqu\'au Jour 2',
+  '🌀 Entrez dans le portail bleu',
+  '🧟 Éliminez les zombies du labo',
+  '💀 Vaincre le Boss Gardien',
+  '🔑 Utilisez la clé sur le portail violet',
+  '👹 Vaincre le Boss Final',
+];
+
+function updateQuestLog(){
+  const steps=document.getElementById('questSteps');
+  if(!steps) return; // élément supprimé, on ignore silencieusement
+  let html='';
+  for(let i=0;i<QUEST_LABELS.length;i++){
+    let cls='ql-step';
+    if(i<questStep) cls+=' done';
+    else if(i===questStep) cls+=' active';
+    html+=`<div class="${cls}">${QUEST_LABELS[i]}</div>`;
+  }
+  steps.innerHTML=html;
+}
+
+/* ══════════════════════════════════════════════
+   BASE & CAMPFIRE
+══════════════════════════════════════════════ */
+const BASE_LEVELS=[
+  {radius:200,campRadius:90, woodToUpgrade:15,metalToUpgrade:0, regenRate:2, label:'Niveau 1'},
+  {radius:270,campRadius:120,woodToUpgrade:25,metalToUpgrade:10,regenRate:4, label:'Niveau 2'},
+  {radius:350,campRadius:150,woodToUpgrade:40,metalToUpgrade:20,regenRate:6, label:'Niveau 3'},
+  {radius:440,campRadius:185,woodToUpgrade:60,metalToUpgrade:35,regenRate:9, label:'Niveau 4'},
+  {radius:540,campRadius:220,woodToUpgrade:999,metalToUpgrade:999,regenRate:14,label:'Niveau 5 (MAX)'},
+];
+let baseLevel=0,campfireFlicker=1,campfirePhase=0,playerInBase=false;
+
+/* ══════════════════════════════════════════════
+   WEAPONS
+══════════════════════════════════════════════ */
+const WEAPONS={
+  bat:    {name:"Batte de base-ball",damage:30,fireRate:.55, bulletSpeed:0,   spread:0,   pellets:0,maxAmmo:Infinity,color:"#c8a060",melee:true,meleeRadius:52},
+  hammer: {name:"Marteau",           damage:5, fireRate:.6,  bulletSpeed:0,   spread:0,   pellets:0,maxAmmo:Infinity,color:"#a0a0b0",melee:true,meleeRadius:50,isHammer:true},
+  axe:    {name:"Hache",             damage:45,fireRate:.7,  bulletSpeed:0,   spread:0,   pellets:0,maxAmmo:Infinity,color:"#c87a30",melee:true,meleeRadius:58},
+  smg:    {name:"Mitraillette",      damage:10,fireRate:.085,bulletSpeed:1050,spread:.10, pellets:1,maxAmmo:120,    color:"#ffd166"},
+  shotgun:{name:"Fusil à pompe",     damage:12,fireRate:.70, bulletSpeed:850, spread:.32, pellets:6,maxAmmo:32,     color:"#ff6b6b"},
+  rifle:  {name:"Fusil d'assaut",    damage:26,fireRate:.14, bulletSpeed:1200,spread:.035,pellets:1,maxAmmo:90,     color:"#6be3ff"},
+};
+
+/* ══════════════════════════════════════════════
+   ZOMBIE TYPES
+══════════════════════════════════════════════ */
+const ZOMBIE_TYPES={
+  walker:{hp:55, speed:75, damage:8, radius:16,color:"#5c7a4f",dark:"#33422b"},
+  runner:{hp:32, speed:155,damage:6, radius:13,color:"#9aa64a",dark:"#535c28"},
+  brute: {hp:250,speed:48, damage:20,radius:24,color:"#4a4030",dark:"#241f16"},
+  boss:  {hp:900,speed:95, damage:28,radius:34,color:"#6a2a80",dark:"#3a1050"},
+  lab:   {hp:70, speed:90, damage:10,radius:15,color:"#30607a",dark:"#1a3040"}, // lab zombie
+  final: {hp:3000,speed:110,damage:40,radius:50,color:"#8a0a60",dark:"#500030"}, // final boss
+};
+
+/* ══════════════════════════════════════════════
+   DAY/NIGHT
+══════════════════════════════════════════════ */
+const DAY_DUR=90,NIGHT_DUR=30,CYCLE=120;
+let cycleTimer=0,dayCount=1,isNight=false,nightAlpha=0;
+let nightJustStarted=false,dayJustStarted=false,bossSpawnedThisNight=false;
+
+/* ══════════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════════ */
+let gameState='start'; // start | playing | dungeon | victory | gameover
+let player,zombies,bullets,particles,chests,craftedWalls,toasts,waveBanner,foodDrops;
+let wave,killCount,survivalTime,waveQueue,spawnTimer,spawnInterval,waveBreakTimer;
+let screenShake=0,audioCtx=null,actionContext=null;
+let batSwing={active:false,timer:0,duration:0.18,angle:0}; // animation batte
+
+const leftStick ={x:0,y:0,active:false,pointerId:null};
+const rightStick={x:0,y:0,active:false,pointerId:null};
+
+/* INVENTAIRE PERSISTANT — survit à la mort */
+const inventory={
+  money:0,
+  owned:{bat:true,hammer:true,axe:false,smg:false,shotgun:false,rifle:false},
+  ammo:{bat:Infinity,hammer:Infinity,axe:Infinity,smg:0,shotgun:0,rifle:0},
+  currentWeapon:'bat',
+  bag:[null,null,null],
+};
+function addToBag(type,qty){
+  for(const s of inventory.bag){if(s&&s.type===type){s.qty+=qty;return true;}}
+  for(let i=0;i<3;i++){if(!inventory.bag[i]){inventory.bag[i]={type,qty};return true;}}
+  return false;
+}
+function emptyBagToResources(){
+  if(!player) return;
+  for(const s of inventory.bag){
+    if(!s) continue;
+    if(s.type==='wood')  player.wood+=s.qty;
+    if(s.type==='metal') player.metal+=s.qty;
+    if(s.type==='money') inventory.money+=s.qty;
+  }
+  inventory.bag=[null,null,null];
+}
+function saveInventory(){
+  if(!player) return;
+  inventory.ammo={...player.ammo};
+  inventory.currentWeapon=player.currentWeapon;
+  inventory.owned.axe=player.hasAxe;
+  for(const w of['smg','shotgun','rifle']) if((player.ammo[w]||0)>0) inventory.owned[w]=true;
+}
+function resetInventory(){
+  inventory.money=0;
+  inventory.owned={bat:true,hammer:true,axe:false,smg:false,shotgun:false,rifle:false};
+  inventory.ammo={bat:Infinity,hammer:Infinity,axe:Infinity,smg:0,shotgun:0,rifle:0};
+  inventory.currentWeapon='bat';
+  inventory.bag=[null,null,null];
+}
+
+function freshPlayer(){
+  return{
+    x:BASE.x,y:BASE.y,radius:18,speed:220,
+    health:100,armor:0,invuln:0,fireCooldown:0,
+    aimAngle:0,firing:false,
+    currentWeapon:inventory.currentWeapon,
+    ammo:{...inventory.ammo},
+    hasAxe:inventory.owned.axe,
+    speedTimer:0,
+    wood:0,metal:0,food:0,totalWoodChopped:0,
+    hunger:100,hungerDecay:1.5,
+  };
+}
+
+/* ══════════════════════════════════════════════
+   AUDIO
+══════════════════════════════════════════════ */
+function playSound(type){
+  if(!audioCtx) return;
+  const t=audioCtx.currentTime,osc=audioCtx.createOscillator(),g=audioCtx.createGain();
+  osc.connect(g);g.connect(audioCtx.destination);
+  if(type==='shoot'){osc.type='square';osc.frequency.setValueAtTime(220,t);osc.frequency.exponentialRampToValueAtTime(80,t+.08);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);osc.start(t);osc.stop(t+.12);}
+  else if(type==='hurt'){osc.type='sawtooth';osc.frequency.setValueAtTime(140,t);g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);osc.start(t);osc.stop(t+.25);}
+  else if(type==='zHit'){osc.type='triangle';osc.frequency.setValueAtTime(90,t);g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);osc.start(t);osc.stop(t+.1);}
+  else if(type==='death'){osc.type='sawtooth';osc.frequency.setValueAtTime(60,t);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);osc.start(t);osc.stop(t+.3);}
+  else if(type==='pickup'){osc.type='sine';osc.frequency.setValueAtTime(440,t);osc.frequency.exponentialRampToValueAtTime(880,t+.15);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);osc.start(t);osc.stop(t+.18);}
+  else if(type==='chop'){osc.type='square';osc.frequency.setValueAtTime(180,t);osc.frequency.linearRampToValueAtTime(90,t+.1);g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);osc.start(t);osc.stop(t+.12);}
+  else if(type==='wave'){osc.type='square';osc.frequency.setValueAtTime(160,t);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);osc.start(t);osc.stop(t+.5);}
+  else if(type==='portal'){osc.type='sine';osc.frequency.setValueAtTime(300,t);osc.frequency.exponentialRampToValueAtTime(600,t+.3);g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+.4);osc.start(t);osc.stop(t+.4);}
+  else if(type==='levelup'){osc.type='sine';osc.frequency.setValueAtTime(440,t);osc.frequency.exponentialRampToValueAtTime(880,t+.25);g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);osc.start(t);osc.stop(t+.3);}
+  else if(type==='bossdeath'){osc.type='sawtooth';osc.frequency.setValueAtTime(80,t);osc.frequency.exponentialRampToValueAtTime(20,t+.8);g.gain.setValueAtTime(.22,t);g.gain.exponentialRampToValueAtTime(.001,t+.8);osc.start(t);osc.stop(t+.8);}
+}
+
+/* ══════════════════════════════════════════════
+   JOYSTICKS
+══════════════════════════════════════════════ */
+function setupJoystick(el,kn,st){
+  let br=null;
+  function upd(e){
+    const cx=br.left+br.width/2,cy=br.top+br.height/2;
+    let dx=e.clientX-cx,dy=e.clientY-cy;
+    const mr=br.width/2,d=Math.hypot(dx,dy);
+    if(d>mr){dx=dx/d*mr;dy=dy/d*mr;}
+    kn.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+    st.x=dx/mr;st.y=dy/mr;st.active=Math.hypot(st.x,st.y)>.18;
+  }
+  function end(e){if(e.pointerId!==st.pointerId)return;st.pointerId=null;st.x=0;st.y=0;st.active=false;kn.style.transform='translate(-50%,-50%)';}
+  el.addEventListener('pointerdown',e=>{st.pointerId=e.pointerId;br=el.getBoundingClientRect();try{el.setPointerCapture(e.pointerId);}catch(_){}upd(e);});
+  el.addEventListener('pointermove',e=>{if(e.pointerId===st.pointerId)upd(e);});
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+}
+setupJoystick(document.getElementById('joyLeft'),document.getElementById('knobLeft'),leftStick);
+setupJoystick(document.getElementById('joyRight'),document.getElementById('knobRight'),rightStick);
+
+/* ══════════════════════════════════════════════
+   COLLISION
+══════════════════════════════════════════════ */
+function resolveObs(ent,obsArr,extraObs){
+  const all=extraObs?[...obsArr,...extraObs]:obsArr;
+  for(const r of all){
+    const cx=clamp(ent.x,r.x,r.x+r.w),cy=clamp(ent.y,r.y,r.y+r.h);
+    const dx=ent.x-cx,dy=ent.y-cy,d=Math.hypot(dx,dy);
+    if(d<ent.radius){
+      if(d===0){const oL=ent.x-r.x,oR=r.x+r.w-ent.x,oT=ent.y-r.y,oB=r.y+r.h-ent.y,m=Math.min(oL,oR,oT,oB);if(m===oL)ent.x=r.x-ent.radius;else if(m===oR)ent.x=r.x+r.w+ent.radius;else if(m===oT)ent.y=r.y-ent.radius;else ent.y=r.y+r.h+ent.radius;}
+      else{ent.x+=dx/d*(ent.radius-d);ent.y+=dy/d*(ent.radius-d);}
+    }
+  }
+  ent.x=clamp(ent.x,ent.radius,( obsArr===dungeonWalls?DW:WORLD.w)-ent.radius);
+  ent.y=clamp(ent.y,ent.radius,( obsArr===dungeonWalls?DH:WORLD.h)-ent.radius);
+}
+function pInR(px,py,r){return px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h;}
+
+/* ══════════════════════════════════════════════
+   FOOD DROPS
+══════════════════════════════════════════════ */
+function updateFoodDrops(){
+  for(let i=foodDrops.length-1;i>=0;i--){
+    const f=foodDrops[i];
+    const target=inDungeon?dungeonPlayer:player;
+    if(dist(target.x,target.y,f.x,f.y)<target.radius+24){player.food=Math.min(player.food+1,20);foodDrops.splice(i,1);playSound('pickup');}
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MAISONS — fouille pour ressources (pas d'armes)
+══════════════════════════════════════════════ */
+function lootHouse(h){
+  if(h.looted) return;
+  h.looted=true;
+  const l=h.loot;
+  const msgs=[];
+  let bagFull=false;
+  if(l.wood>0){
+    if(addToBag('wood',l.wood)) msgs.push(`🪵+${l.wood} bois`);
+    else bagFull=true;
+  }
+  if(l.metal>0){
+    if(addToBag('metal',l.metal)) msgs.push(`🔩+${l.metal} métal`);
+    else bagFull=true;
+  }
+  if(l.money>0){
+    if(addToBag('money',l.money)) msgs.push(`💰+${l.money}$`);
+    else bagFull=true;
+  }
+  if(l.food>0){player.food=Math.min(player.food+1,20);msgs.push('🍗+1 nourriture');}
+  if(bagFull) showToast('🎒 Sac plein ! Videz-le à la base.');
+  else if(msgs.length) showToast('🏠 ' + msgs.join(', ') + ' !');
+  else showToast('🏠 Maison vide…');
+  playSound('pickup');
+}
+
+/* ══════════════════════════════════════════════
+   CRAFT
+══════════════════════════════════════════════ */
+const WALL_W=5,WALL_M=3;
+function buildWall(){
+  if(craftedWalls.length>=50){showToast('Limite de murs !');return;}
+  if(player.wood<WALL_W||player.metal<WALL_M){showToast(`Besoin: 🪵${WALL_W} + 🔩${WALL_M}`);return;}
+  const wx=player.x+Math.cos(player.aimAngle)*60,wy=player.y+Math.sin(player.aimAngle)*60;
+  craftedWalls.push({x:wx-25,y:wy-25,w:50,h:50,hp:3,maxHp:3});
+  player.wood-=WALL_W;player.metal-=WALL_M;showToast('🧱 Mur construit !');
+}
+function openCraft(){document.getElementById('craftPanel').classList.add('open');renderCraft();}
+function closeCraft(){document.getElementById('craftPanel').classList.remove('open');}
+document.getElementById('closeCraft').addEventListener('click',closeCraft);
+document.getElementById('closeShop').addEventListener('click',closeShop);
+
+// Délégation d'événements sur craftList — évite les problèmes de re-render
+document.getElementById('craftList').addEventListener('click', e=>{
+  const btn=e.target.closest('button');
+  if(!btn) return;
+  if(btn.id==='bUF'){
+    const c=BASE_LEVELS[baseLevel];
+    if(player.wood>=c.woodToUpgrade&&(c.metalToUpgrade===0||player.metal>=c.metalToUpgrade)){
+      player.wood-=c.woodToUpgrade;
+      player.metal-=c.metalToUpgrade;
+      baseLevel=Math.min(4,baseLevel+1);
+      buildBaseWalls(); // reconstruire les murs circulaires au nouveau rayon
+      showToast(`🔥 Feu ${BASE_LEVELS[baseLevel].label} ! Les murs s'agrandissent !`);
+      playSound('levelup');
+      renderCraft();
+    } else {
+      showToast('Pas assez de ressources !');
+    }
+  }
+  if(btn.id==='bWL'){buildWall();renderCraft();}
+});
+
+function renderCraft(){
+  document.getElementById('craftTitle').textContent=`🔥 Feu — ${BASE_LEVELS[baseLevel].label}`;
+  const lvl=BASE_LEVELS[baseLevel];
+  let h='';
+  // Ressources actuelles
+  h+=`<div class="craft-item" style="border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:4px;">
+    <div style="color:#aaa;font-size:12px;">Ressources : 🪵${player.wood} bois &nbsp;·&nbsp; 🔩${player.metal} métal</div>
+  </div>`;
+  if(baseLevel<4){
+    const next=BASE_LEVELS[baseLevel+1];
+    const cost=lvl;
+    const canUp=player.wood>=cost.woodToUpgrade&&(cost.metalToUpgrade===0||player.metal>=cost.metalToUpgrade);
+    const mr=cost.metalToUpgrade>0?` + 🔩${cost.metalToUpgrade}`:'';
+    h+=`<div class="craft-item">
+      <div>
+        <div style="color:#e0d8cc;font-weight:600;">🔥 Améliorer → ${next.label}</div>
+        <div class="cost">🪵${cost.woodToUpgrade} bois${mr}</div>
+        <div style="font-size:10px;color:#708060;margin-top:2px;">Regen +${next.regenRate} PV/s · Murs s'agrandissent</div>
+      </div>
+      <button class="craft-btn" id="bUF" ${canUp?'':'disabled'}>${canUp?'Améliorer':'Manque ressources'}</button>
+    </div>`;
+  } else {
+    h+=`<div class="craft-item"><div style="color:#ffd166;">🔥 Feu de camp au niveau MAXIMUM !</div></div>`;
+  }
+  const cw=player.wood>=WALL_W&&player.metal>=WALL_M;
+  h+=`<div class="craft-item">
+    <div>
+      <div style="color:#e0d8cc;font-weight:600;">🧱 Construire un mur supplémentaire</div>
+      <div class="cost">🪵${WALL_W} + 🔩${WALL_M}</div>
+    </div>
+    <button class="craft-btn" id="bWL" ${cw?'':'disabled'}>Construire</button>
+  </div>`;
+  document.getElementById('craftList').innerHTML=h;
+}
+
+/* ══════════════════════════════════════════════
+   TOASTS & BANNER
+══════════════════════════════════════════════ */
+function showToast(t){toasts.push({text:t,timer:2.5,max:2.5});}
+function showBanner(t){waveBanner={text:t,timer:3.0,max:3.0};}
+function updateToasts(dt){
+  for(let i=toasts.length-1;i>=0;i--){toasts[i].timer-=dt;if(toasts[i].timer<=0)toasts.splice(i,1);}
+  if(waveBanner){waveBanner.timer-=dt;if(waveBanner.timer<=0)waveBanner=null;}
+}
+
+/* ══════════════════════════════════════════════
+   WAVE / SPAWN (world — only at night)
+══════════════════════════════════════════════ */
+function nightScale(){return dayCount;}
+function buildNightWave(){
+  const n=nightScale(),total=8+n*4,q=[];
+  for(let i=0;i<total;i++){const r=Math.random();let t='walker';if(n>=5&&r<.12)t='brute';else if(n>=2&&r<.35)t='runner';q.push(t);}
+  for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]];}
+  return q;
+}
+function startNightWave(){
+  wave++;waveQueue=buildNightWave();
+  spawnInterval=Math.max(.25,1.2-nightScale()*.06);spawnTimer=0;waveBreakTimer=null;
+  showBanner(`🌙 NUIT ${dayCount} — VAGUE ${wave}`);playSound('wave');
+}
+function spawnWorldZombie(type){
+  const sp=spawnPoints[Math.floor(Math.random()*spawnPoints.length)];
+  const s=ZOMBIE_TYPES[type],n=nightScale();
+  zombies.push({type,x:sp.x+rand(-20,20),y:sp.y+rand(-20,20),
+    hp:s.hp*(1+(n-1)*.18),maxHp:s.hp*(1+(n-1)*.18),
+    speed:s.speed*(1+Math.min((n-1)*.04,.6))*rand(.9,1.1),
+    damage:s.damage*(1+(n-1)*.12),radius:s.radius,hitCooldown:0,angle:0,walkPhase:Math.random()*Math.PI*2});
+}
+function spawnNightBoss(){
+  const sp=spawnPoints[Math.floor(Math.random()*spawnPoints.length)];
+  const s=ZOMBIE_TYPES.boss,n=nightScale();
+  zombies.push({type:'boss',x:sp.x,y:sp.y,
+    hp:s.hp*(1+(n-1)*.25),maxHp:s.hp*(1+(n-1)*.25),
+    speed:s.speed*(1+Math.min((n-1)*.04,.5)),
+    damage:s.damage*(1+(n-1)*.15),radius:s.radius,hitCooldown:0,angle:0,walkPhase:0});
+  showToast(`⚠️ BOSS NOCTURNE — Nuit ${dayCount} !`);
+}
+function updateWaveLogic(dt){
+  if(!isNight||inDungeon) return;
+  if(waveQueue.length>0){spawnTimer-=dt;if(spawnTimer<=0){spawnTimer=spawnInterval;spawnWorldZombie(waveQueue.pop());}}
+  else if(zombies.length===0&&waveBreakTimer===null) waveBreakTimer=4;
+  if(waveBreakTimer!==null){waveBreakTimer-=dt;if(waveBreakTimer<=0){waveBreakTimer=null;startNightWave();}}
+}
+
+/* ══════════════════════════════════════════════
+   DAY / NIGHT
+══════════════════════════════════════════════ */
+function updateDayNight(dt){
+  if(inDungeon) return;
+  cycleTimer+=dt;const was=isNight;
+  if(cycleTimer>=CYCLE){cycleTimer=0;dayCount++;isNight=false;bossSpawnedThisNight=false;dayJustStarted=true;}
+  isNight=cycleTimer>=DAY_DUR;
+  if(dayJustStarted){dayJustStarted=false;zombies=[];waveQueue=[];waveBreakTimer=null;showBanner(`☀️ JOUR ${dayCount} — Les zombies ont fui !`);playSound('pickup');}
+  if(isNight&&!was){nightJustStarted=true;}
+  if(nightJustStarted){nightJustStarted=false;showBanner(`🌙 NUIT ${dayCount} — Préparez-vous !`);playSound('wave');waveBreakTimer=3;}
+  nightAlpha=isNight?clamp(.18+((cycleTimer-DAY_DUR)/NIGHT_DUR)*.52,.18,.68):cycleTimer/DAY_DUR>.8?(cycleTimer/DAY_DUR-.8)/.2*.12:0;
+  if(isNight&&!bossSpawnedThisNight&&(cycleTimer-DAY_DUR)>NIGHT_DUR*.45&&dayCount>=2){bossSpawnedThisNight=true;spawnNightBoss();}
+  // Quest step 0: portal opens at start of day 3 (after 2 full nights)
+  if(questStep===0&&dayCount>=3&&!isNight){
+    questStep=1;PORTAL1.open=true;
+    showBanner('🌀 UN PORTAIL S\'EST OUVERT PRÈS DE LA BASE !');
+    playSound('portal');updateQuestLog();
+  }
+  const pct=isNight?Math.round(((cycleTimer-DAY_DUR)/NIGHT_DUR)*100):Math.round((cycleTimer/DAY_DUR)*100);
+  document.getElementById('timeIcon').textContent=isNight?'🌙':'☀️';
+  document.getElementById('timeLabel').textContent=isNight?`NUIT ${dayCount}`:`JOUR ${dayCount}`;
+  document.getElementById('timePct').textContent=`${pct}%`;
+}
+
+/* ══════════════════════════════════════════════
+   DUNGEON — enter, update, render
+══════════════════════════════════════════════ */
+function spawnDungeonZombies(){
+  dungeonZombies=[];dungeonParticles=[];
+  // 3 rooms with lab zombies + 1 brute each
+  const positions=[
+    {x:250,y:200},{x:750,y:200},{x:1250,y:200},{x:1750,y:200},
+    {x:120,y:520},{x:500,y:520},{x:900,y:520},{x:1300,y:520},{x:1700,y:520},
+    {x:250,y:880},{x:600,y:880},{x:1100,y:880},{x:1600,y:880},
+    {x:500,y:500,t:'brute'},{x:1200,y:500,t:'brute'},{x:800,y:880,t:'brute'},
+  ];
+  for(const p of positions){
+    const type=p.t||'lab',s=ZOMBIE_TYPES[type];
+    dungeonZombies.push({type,x:p.x,y:p.y,
+      hp:s.hp,maxHp:s.hp,speed:s.speed,damage:s.damage,
+      radius:s.radius,hitCooldown:0,angle:0,walkPhase:Math.random()*Math.PI*2});
+  }
+}
+function spawnLabBoss(){
+  const s=ZOMBIE_TYPES.boss;
+  labBoss={type:'boss',x:DW/2,y:1240,
+    hp:s.hp*1.5,maxHp:s.hp*1.5,speed:s.speed,damage:s.damage*1.2,
+    radius:s.radius,hitCooldown:0,angle:0,walkPhase:0,isBossGuardian:true};
+}
+function enterDungeon(){
+  inDungeon=true;gameState='dungeon';
+  dCanvas.style.display='block';
+  // Player enters at top center of dungeon
+  dungeonPlayer={x:DUNGEON_ENTRY.x,y:DUNGEON_ENTRY.y+60,radius:18,speed:player.speed,
+    aimAngle:player.aimAngle,firing:false,invuln:player.invuln,fireCooldown:player.fireCooldown};
+  dungeonZombies=[];labBoss=null;dungeonParticles=[];
+  spawnDungeonZombies();
+  dungeonCleared=false;labBossDefeated=false;
+  questStep=2;updateQuestLog();
+  showBanner('🧟 LABORATOIRE — Éliminez tous les zombies !');
+  playSound('wave');
+}
+function exitDungeon(){
+  inDungeon=false;gameState='playing';
+  dCanvas.style.display='none';
+  if(dungeonPlayer) player.health=Math.max(1,player.health);
+  player.x=BASE.x;player.y=BASE.y;
+  saveInventory(); // conserver les armes récupérées dans le donjon
+  showBanner('🔑 Téléporté à la base ! Utilisez la clé sur le portail violet.');
+  playSound('portal');
+  // open portal 2
+  PORTAL2.open=true;questStep=4;updateQuestLog();
+}
+
+let dungeonBullets=[];
+function fireDungeonWeapon(){
+  const w=WEAPONS[player.currentWeapon];
+  if(w.melee){
+    if(player.fireCooldown>0) return;
+    player.fireCooldown=w.fireRate;const mr=w.meleeRadius;
+    for(let i=dungeonZombies.length-1;i>=0;i--){
+      const z=dungeonZombies[i];
+      if(dist(dungeonPlayer.x,dungeonPlayer.y,z.x,z.y)<mr){
+        z.hp-=w.damage;playSound('zHit');
+        dungeonParticles.push({type:'blood',x:z.x,y:z.y,vx:rand(-60,60),vy:rand(-60,60),life:.4,max:.4,size:5});
+        if(z.hp<=0){killCount++;playSound('death');for(let p=0;p<5;p++) dungeonParticles.push({type:'blood',x:z.x,y:z.y,vx:rand(-80,80),vy:rand(-80,80),life:rand(.3,.7),max:.7,size:rand(3,6)});dungeonZombies.splice(i,1);}
+      }
+    }
+    if(labBoss){
+      if(dist(dungeonPlayer.x,dungeonPlayer.y,labBoss.x,labBoss.y)<mr+10){labBoss.hp-=w.damage;playSound('zHit');if(labBoss.hp<=0)killLabBoss();}
+    }
+    return;
+  }
+  if(player.fireCooldown>0) return;
+  if(player.ammo[player.currentWeapon]<=0){
+    player.currentWeapon='bat';inventory.currentWeapon='bat';
+    showToast('🏏 Plus de munitions !');return;
+  }
+  player.fireCooldown=w.fireRate;
+  if(player.currentWeapon!=='pistol') player.ammo[player.currentWeapon]--;
+  for(let i=0;i<w.pellets;i++){
+    const sp=(Math.random()-.5)*w.spread,ang=dungeonPlayer.aimAngle+sp;
+    dungeonBullets.push({x:dungeonPlayer.x+Math.cos(dungeonPlayer.aimAngle)*20,y:dungeonPlayer.y+Math.sin(dungeonPlayer.aimAngle)*20,vx:Math.cos(ang)*w.bulletSpeed,vy:Math.sin(ang)*w.bulletSpeed,damage:w.damage,life:.9,color:w.color});
+  }
+  dungeonParticles.push({type:'flash',x:dungeonPlayer.x+Math.cos(dungeonPlayer.aimAngle)*22,y:dungeonPlayer.y+Math.sin(dungeonPlayer.aimAngle)*22,life:.08,max:.08,size:14});
+  playSound('shoot');
+}
+function killLabBoss(){
+  playSound('bossdeath');
+  for(let i=0;i<16;i++) dungeonParticles.push({type:'blood',x:labBoss.x,y:labBoss.y,vx:rand(-120,120),vy:rand(-120,120),life:rand(.5,1.2),max:1.2,size:rand(4,10)});
+  killCount++;
+  // Drop key at boss position
+  foodDrops.push({x:labBoss.x,y:labBoss.y,bobPhase:0,isKey:true});
+  labBoss=null;labBossDefeated=true;
+  questStep=3;updateQuestLog();
+  showBanner('💀 Boss Gardien vaincu ! Ramassez la 🗝️ clé !');
+}
+function updateDungeon(dt){
+  if(!inDungeon) return;
+  // Movement
+  dungeonPlayer.x+=leftStick.x*dungeonPlayer.speed*dt;
+  dungeonPlayer.y+=leftStick.y*dungeonPlayer.speed*dt;
+  applyKeyboard(dt,true);
+  resolveObs(dungeonPlayer,dungeonWalls);
+  // Aim
+  if(rightStick.active){dungeonPlayer.aimAngle=Math.atan2(rightStick.y,rightStick.x);dungeonPlayer.firing=true;}
+  else dungeonPlayer.firing=false;
+  if(dungeonPlayer.firing) fireDungeonWeapon();
+  if(player.fireCooldown>0) player.fireCooldown-=dt;
+  if(dungeonPlayer.invuln>0) dungeonPlayer.invuln-=dt;
+
+  // Bullets
+  for(let i=dungeonBullets.length-1;i>=0;i--){
+    const b=dungeonBullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+    if(b.life<=0||b.x<0||b.x>DW||b.y<0||b.y>DH){dungeonBullets.splice(i,1);continue;}
+    let rm=false;
+    for(const r of dungeonWalls){if(pInR(b.x,b.y,r)){dungeonParticles.push({type:'spark',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.15,max:.15,size:3});dungeonBullets.splice(i,1);rm=true;break;}}
+    if(rm) continue;
+    // Hit dungeon zombies
+    for(let j=dungeonZombies.length-1;j>=0;j--){
+      const z=dungeonZombies[j];
+      if(dist(b.x,b.y,z.x,z.y)<z.radius){
+        z.hp-=b.damage;playSound('zHit');dungeonParticles.push({type:'blood',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.3,max:.3,size:4});
+        dungeonBullets.splice(i,1);killCount++;
+        if(z.hp<=0){for(let p=0;p<5;p++) dungeonParticles.push({type:'blood',x:z.x,y:z.y,vx:rand(-80,80),vy:rand(-80,80),life:rand(.3,.7),max:.7,size:rand(3,6)});if(Math.random()<.4) foodDrops.push({x:z.x,y:z.y,bobPhase:Math.random()*Math.PI*2});dungeonZombies.splice(j,1);}
+        rm=true;break;
+      }
+    }
+    if(rm) continue;
+    // Hit lab boss
+    if(labBoss&&dist(b.x,b.y,labBoss.x,labBoss.y)<labBoss.radius){
+      labBoss.hp-=b.damage;playSound('zHit');dungeonParticles.push({type:'blood',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.3,max:.3,size:4});
+      dungeonBullets.splice(i,1);if(labBoss.hp<=0)killLabBoss();
+    }
+  }
+
+  // Check if dungeon cleared → spawn boss
+  if(!dungeonCleared&&dungeonZombies.length===0&&!labBoss&&!labBossDefeated){
+    dungeonCleared=true;questStep=3;updateQuestLog();
+    showBanner('🚪 SALLE DU BOSS S\'OUVRE !');
+    setTimeout(()=>spawnLabBoss(),1500);
+  }
+
+  // Move dungeon zombies
+  for(const z of dungeonZombies){
+    const dx=dungeonPlayer.x-z.x,dy=dungeonPlayer.y-z.y,d=Math.hypot(dx,dy)||1;
+    z.x+=(dx/d)*z.speed*dt;z.y+=(dy/d)*z.speed*dt;z.angle=Math.atan2(dy,dx);z.walkPhase+=dt*8;
+    if(z.hitCooldown>0) z.hitCooldown-=dt;
+    if(d<dungeonPlayer.radius+z.radius+4&&z.hitCooldown<=0&&dungeonPlayer.invuln<=0){
+      player.health-=z.damage;dungeonPlayer.invuln=.4;playSound('hurt');
+      if(player.health<=0){player.health=0;gameOver();return;}
+      z.hitCooldown=.8;
+    }
+  }
+  if(labBoss){
+    const dx=dungeonPlayer.x-labBoss.x,dy=dungeonPlayer.y-labBoss.y,d=Math.hypot(dx,dy)||1;
+    labBoss.x+=(dx/d)*labBoss.speed*dt;labBoss.y+=(dy/d)*labBoss.speed*dt;
+    labBoss.angle=Math.atan2(dy,dx);labBoss.walkPhase+=dt*6;
+    if(labBoss.hitCooldown>0) labBoss.hitCooldown-=dt;
+    if(d<dungeonPlayer.radius+labBoss.radius+4&&labBoss.hitCooldown<=0&&dungeonPlayer.invuln<=0){
+      player.health-=labBoss.damage;dungeonPlayer.invuln=.4;screenShake=.3;playSound('hurt');
+      if(player.health<=0){player.health=0;gameOver();return;}
+      labBoss.hitCooldown=.8;
+    }
+    resolveObs(labBoss,dungeonWalls);
+  }
+
+  // Key pickup in dungeon
+  for(let i=foodDrops.length-1;i>=0;i--){
+    const f=foodDrops[i];
+    if(f.isKey&&dist(dungeonPlayer.x,dungeonPlayer.y,f.x,f.y)<dungeonPlayer.radius+28){
+      hasKey=true;foodDrops.splice(i,1);playSound('levelup');
+      showBanner('🗝️ CLÉ RÉCUPÉRÉE ! Téléportation vers la base…');
+      setTimeout(exitDungeon,2000);
+    }
+    else if(!f.isKey&&dist(dungeonPlayer.x,dungeonPlayer.y,f.x,f.y)<dungeonPlayer.radius+24){
+      player.food=Math.min(player.food+1,20);foodDrops.splice(i,1);playSound('pickup');
+    }
+  }
+
+  // Particles
+  for(let i=dungeonParticles.length-1;i>=0;i--){const p=dungeonParticles[i];if(p.vx)p.x+=p.vx*dt;if(p.vy)p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)dungeonParticles.splice(i,1);}
+}
+
+/* ══════════════════════════════════════════════
+   FINAL BOSS (world map, after portal 2)
+══════════════════════════════════════════════ */
+function enterFinalBossArena(){
+  const s=ZOMBIE_TYPES.final;
+  finalBoss={type:'final',x:BASE.x,y:BASE.y-350,
+    hp:s.hp,maxHp:s.hp,speed:s.speed,damage:s.damage,
+    radius:s.radius,hitCooldown:0,angle:0,walkPhase:0};
+  finalBossSpawned=true;questStep=5;updateQuestLog();
+  showBanner('👹 LE BOSS FINAL EST APPARU ! TOUT OU RIEN !');
+  playSound('bossdeath');
+}
+
+/* ══════════════════════════════════════════════
+   COMBAT (world)
+══════════════════════════════════════════════ */
+function fireMelee(){
+  const w=WEAPONS[player.currentWeapon];
+  if(!w.melee||player.fireCooldown>0) return;
+  player.fireCooldown=w.fireRate;const mr=w.meleeRadius;
+  // Animation swing batte
+  if(player.currentWeapon==='bat'){batSwing.active=true;batSwing.timer=batSwing.duration;batSwing.angle=player.aimAngle;}
+  for(let i=zombies.length-1;i>=0;i--){const z=zombies[i];if(dist(player.x,player.y,z.x,z.y)<mr){z.hp-=w.damage;playSound('zHit');particles.push({type:'blood',x:z.x,y:z.y,vx:rand(-60,60),vy:rand(-60,60),life:.4,max:.4,size:5});if(z.hp<=0)killZombie(z,i);}}
+  // Final boss
+  if(finalBoss&&dist(player.x,player.y,finalBoss.x,finalBoss.y)<mr+10){finalBoss.hp-=w.damage;playSound('zHit');if(finalBoss.hp<=0)killFinalBoss();}
+  if(player.hasAxe){for(const t of trees){if(t.hp>0&&dist(player.x,player.y,t.x,t.y)<mr+20){t.hp--;playSound('chop');particles.push({type:'spark',x:t.x,y:t.y,vx:rand(-30,30),vy:rand(-30,30),life:.2,max:.2,size:4});if(t.hp<=0){const g=(rand(2,4)|0);player.wood+=g;player.totalWoodChopped=(player.totalWoodChopped||0)+g;showToast(`🪵+${g} bois (${player.wood})`);setTimeout(()=>{t.hp=t.maxHp;},20000);}}}}
+}
+/* ── État animations de tir ── */
+let gunAnim={recoil:0,shellTimer:0,muzzleTimer:0}; // timers d'animation
+
+function spawnMuzzleEffects(w){
+  const ang=player.aimAngle;
+  const bx=player.x+Math.cos(ang)*28, by=player.y+Math.sin(ang)*28;
+  // Flash de bouche — taille selon arme
+  const flashSize={smg:10,shotgun:22,rifle:14}[player.currentWeapon]||12;
+  particles.push({type:'flash',x:bx,y:by,life:.08,max:.08,size:flashSize});
+  // Éclairs lumineux pour shotgun
+  if(player.currentWeapon==='shotgun'){
+    for(let i=0;i<4;i++){
+      const a=ang+(Math.random()-.5)*.8;
+      particles.push({type:'spark',x:bx,y:by,vx:Math.cos(a)*rand(80,180),vy:Math.sin(a)*rand(80,180),life:.12,max:.12,size:rand(2,5)});
+    }
+  }
+  // Douille éjectée (côté droit du joueur)
+  const shellAng=ang+Math.PI/2+rand(-.3,.3);
+  particles.push({type:'shell',x:player.x+Math.cos(shellAng)*10,y:player.y+Math.sin(shellAng)*10,
+    vx:Math.cos(shellAng)*rand(60,120),vy:Math.sin(shellAng)*rand(60,120)-30,
+    life:.5,max:.5,size:player.currentWeapon==='shotgun'?4:2.5});
+  // Recul
+  gunAnim.recoil=player.currentWeapon==='shotgun'?.18:player.currentWeapon==='rifle'?.12:.07;
+  gunAnim.muzzleTimer=.08;
+}
+
+function fireWorld(){
+  const w=WEAPONS[player.currentWeapon];
+  if(w.melee){fireMelee();return;}
+  if(player.fireCooldown>0) return;
+  // Plus de munitions → revenir à la batte
+  if(player.ammo[player.currentWeapon]<=0){
+    player.currentWeapon='bat';inventory.currentWeapon='bat';
+    showToast('🏏 Plus de munitions — batte équipée !');
+    return;
+  }
+  player.fireCooldown=w.fireRate;
+  player.ammo[player.currentWeapon]--;
+  inventory.ammo[player.currentWeapon]=player.ammo[player.currentWeapon];
+  // Spawn balles
+  for(let i=0;i<w.pellets;i++){
+    const sp=(Math.random()-.5)*w.spread,ang=player.aimAngle+sp;
+    bullets.push({
+      x:player.x+Math.cos(player.aimAngle)*22,
+      y:player.y+Math.sin(player.aimAngle)*22,
+      vx:Math.cos(ang)*w.bulletSpeed,vy:Math.sin(ang)*w.bulletSpeed,
+      damage:w.damage,life:.9,color:w.color
+    });
+  }
+  spawnMuzzleEffects(w);
+  playSound('shoot');
+}
+function damagePlayer(amt){
+  if(player.invuln>0) return;
+  if(player.armor>0){const a=Math.min(player.armor,amt*.6);player.armor=Math.max(0,player.armor-a);amt=Math.max(1,amt-a);}
+  player.health-=amt;player.invuln=.4;screenShake=.25;playSound('hurt');
+  if(player.health<=0){player.health=0;gameOver();}
+}
+function killZombie(z,idx){
+  killCount++;playSound('death');
+  for(let i=0;i<7;i++) particles.push({type:'blood',x:z.x,y:z.y,vx:rand(-90,90),vy:rand(-90,90),life:rand(.4,.8),max:.8,size:rand(3,7)});
+  if(Math.random()<.5) foodDrops.push({x:z.x+rand(-20,20),y:z.y+rand(-20,20),bobPhase:Math.random()*Math.PI*2});
+  if(Math.random()<.15){player.metal++;showToast(`🔩${player.metal}`);}
+  // Argent : walker=5$, runner=8$, brute=20$, boss=80$
+  const earn={walker:5,runner:8,brute:20,boss:80}[z.type]||5;
+  inventory.money+=earn;
+  showToast(`💰 +${earn}$ (total: ${inventory.money}$)`);
+  zombies.splice(idx,1);
+}
+function killFinalBoss(){
+  playSound('bossdeath');finalBossDefeated=true;finalBoss=null;
+  for(let i=0;i<30;i++) particles.push({type:'blood',x:BASE.x,y:BASE.y-300,vx:rand(-150,150),vy:rand(-150,150),life:rand(.8,2),max:2,size:rand(5,14)});
+  killCount++;
+  setTimeout(()=>victory(),2500);
+  showBanner('🏆 BOSS FINAL VAINCU ! VICTOIRE !');
+}
+
+/* ══════════════════════════════════════════════
+   ARMURERIE — achat d'armes avec argent
+   L'argent vient des kills de zombies
+══════════════════════════════════════════════ */
+const SHOP_ITEMS=[
+  {id:'axe',    name:'Hache',           price:60,  icon:'🪓', ammo:null},
+  {id:'smg',    name:'Mitraillette',    price:80,  icon:'🔫', ammo:120},
+  {id:'shotgun',name:'Fusil à pompe',   price:120, icon:'💥', ammo:32},
+  {id:'rifle',  name:'Fusil d\'assaut', price:200, icon:'🎯', ammo:90},
+  {id:'ammo_smg',    name:'Recharge SMG',    price:30, icon:'📦', ammo:60,  refill:'smg'},
+  {id:'ammo_shotgun',name:'Recharge Shotgun', price:40, icon:'📦', ammo:16,  refill:'shotgun'},
+  {id:'ammo_rifle',  name:'Recharge Rifle',   price:50, icon:'📦', ammo:45,  refill:'rifle'},
+  {id:'medkit', name:'Soin complet',    price:50,  icon:'💊', ammo:null},
+];
+
+// Position de l'armurerie (près de la base)
+const ARMORY={x:BASE.x+120,y:BASE.y+100,w:80,h:60};
+
+let shopOpen=false;
+function openShop(){
+  shopOpen=true;
+  const panel=document.getElementById('shopPanel');
+  panel.classList.add('open');
+  renderShop();
+}
+function closeShop(){
+  shopOpen=false;
+  document.getElementById('shopPanel').classList.remove('open');
+}
+
+function buyItem(item){
+  if(inventory.money<item.price){showToast(`💸 Pas assez d'argent ! (${item.price}$)`);return;}
+  if(item.refill){
+    // Recharge de munitions
+    if(!inventory.owned[item.refill]){showToast(`Achetez d'abord l'arme !`);return;}
+    inventory.money-=item.price;
+    inventory.ammo[item.refill]=Math.min((inventory.ammo[item.refill]||0)+item.ammo, WEAPONS[item.refill].maxAmmo);
+    player.ammo[item.refill]=inventory.ammo[item.refill];
+    showToast(`📦 +${item.ammo} munitions ${item.name} !`);
+  } else if(item.id==='medkit'){
+    inventory.money-=item.price;
+    player.health=100;
+    showToast('💊 Santé restaurée à 100 !');
+  } else {
+    // Achat d'arme
+    inventory.money-=item.price;
+    inventory.owned[item.id]=true;
+    if(item.ammo) inventory.ammo[item.id]=Math.min((inventory.ammo[item.id]||0)+item.ammo, WEAPONS[item.id].maxAmmo);
+    player.ammo[item.id]=inventory.ammo[item.id];
+    player.hasAxe = inventory.owned.axe;
+    player.currentWeapon=item.id;
+    inventory.currentWeapon=item.id;
+    showToast(`${item.icon} ${item.name} acheté${item.ammo?` (${item.ammo} munitions)`:''} !`);
+  }
+  playSound('pickup');
+  renderShop();
+}
+
+function renderShop(){
+  const list=document.getElementById('shopList');
+  let h=`<div style="color:#ffd166;font-size:14px;margin-bottom:10px;">💰 Votre argent : <b>${inventory.money}$</b></div>`;
+  for(const item of SHOP_ITEMS){
+    const owned=item.refill?inventory.owned[item.refill]:inventory.owned[item.id];
+    const affordable=inventory.money>=item.price;
+    const alreadyOwned=!item.refill&&inventory.owned[item.id]&&item.id!=='medkit';
+    const label=alreadyOwned?'✅ Possédé':item.refill?`Recharger (${item.price}$)`:`${item.price}$`;
+    const disabled=!affordable||alreadyOwned?'disabled':'';
+    h+=`<div class="craft-item">
+      <div>
+        <div style="color:#e0d8cc;font-weight:600;">${item.icon} ${item.name}</div>
+        <div class="cost">${item.price}$ ${item.ammo&&!item.refill?`· ${item.ammo} munitions`:''}</div>
+      </div>
+      <button class="craft-btn shop-buy" data-id="${item.id}" ${disabled}>${alreadyOwned?'✅':label}</button>
+    </div>`;
+  }
+  list.innerHTML=h;
+  list.querySelectorAll('.shop-buy').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const it=SHOP_ITEMS.find(x=>x.id===btn.dataset.id);
+      if(it) buyItem(it);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   ACTION CONTEXT
+══════════════════════════════════════════════ */
+function checkAction(){
+  actionContext=null;const btn=document.getElementById('actionBtn');
+  // Portal 1 (lab)
+  if(questStep===1&&PORTAL1.open&&dist(player.x,player.y,PORTAL1.x,PORTAL1.y)<PORTAL1.radius+20){
+    actionContext={type:'portal1'};btn.querySelector('.icon').textContent='🌀';document.getElementById('actionLabel').textContent='ENTRER';btn.classList.add('visible');return;
+  }
+  // Portal 2 (final boss) — needs key
+  if(questStep===4&&PORTAL2.open&&dist(player.x,player.y,PORTAL2.x,PORTAL2.y)<PORTAL2.radius+20){
+    actionContext={type:'portal2'};btn.querySelector('.icon').textContent=hasKey?'🔑':'🔒';document.getElementById('actionLabel').textContent=hasKey?'OUVRIR':'CLÉ ?';btn.classList.add('visible');return;
+  }
+  // Porte de la base
+  const gate=baseWalls.find(w=>w.isGate);
+  if(gate&&gate.hp>0&&dist(player.x,player.y,gate.cx,gate.cy)<80){
+    actionContext={type:'gate'};
+    btn.querySelector('.icon').textContent=gateOpen?'🔒':'🔓';
+    document.getElementById('actionLabel').textContent=gateOpen?'FERMER':'OUVRIR';
+    btn.classList.add('visible');return;
+  }
+  // Mur endommagé à réparer
+  if(!isNight){
+    for(const bw of baseWalls){
+      if(bw.hp>0&&bw.hp<bw.maxHp&&dist(player.x,player.y,bw.cx,bw.cy)<80){
+        actionContext={type:'repair',target:bw};
+        btn.querySelector('.icon').textContent='🔨';
+        document.getElementById('actionLabel').textContent=`RÉPARER(${Math.ceil(bw.hp)}/${bw.maxHp})`;
+        btn.classList.add('visible');return;
+      }
+      if(bw.hp<=0&&dist(player.x,player.y,bw.cx,bw.cy)<80){
+        actionContext={type:'rebuild',target:bw};
+        btn.querySelector('.icon').textContent='🧱';
+        document.getElementById('actionLabel').textContent='RECONSTRUIRE';
+        btn.classList.add('visible');return;
+      }
+    }
+  }
+  // Armurerie
+  if(dist(player.x,player.y,ARMORY.x+ARMORY.w/2,ARMORY.y+ARMORY.h/2)<70){
+    actionContext={type:'armory'};btn.querySelector('.icon').textContent='🛒';
+    document.getElementById('actionLabel').textContent=`SHOP(${inventory.money}$)`;btn.classList.add('visible');return;
+  }
+  // Campfire
+  if(dist(player.x,player.y,BASE.x,BASE.y)<110){actionContext={type:'campfire'};btn.querySelector('.icon').textContent='🔥';document.getElementById('actionLabel').textContent='CRAFT';btn.classList.add('visible');return;}
+  // Vider le sac à la base
+  if(playerInBase&&inventory.bag.some(s=>s!==null)){
+    actionContext={type:'emptybag'};btn.querySelector('.icon').textContent='🎒';
+    document.getElementById('actionLabel').textContent='VIDER SAC';btn.classList.add('visible');return;
+  }
+  // Maisons
+  for(const h of houses){if(!h.looted&&dist(player.x,player.y,h.x+h.w/2,h.y+h.h/2)<70){actionContext={type:'house',target:h};btn.querySelector('.icon').textContent='🏠';document.getElementById('actionLabel').textContent='FOUILLER';btn.classList.add('visible');return;}}
+  // Trees (axe)
+  if(player.hasAxe){for(const t of trees){if(t.hp>0&&dist(player.x,player.y,t.x,t.y)<80){actionContext={type:'tree',target:t};btn.querySelector('.icon').textContent='🪓';document.getElementById('actionLabel').textContent='COUPER';btn.classList.add('visible');return;}}}
+  // Metal
+  for(let i=metalPiles.length-1;i>=0;i--){if(dist(player.x,player.y,metalPiles[i].x,metalPiles[i].y)<60){actionContext={type:'metal',index:i};btn.querySelector('.icon').textContent='🔩';document.getElementById('actionLabel').textContent='RAMASSER';btn.classList.add('visible');return;}}
+  // Eat
+  if(player.food>0&&player.hunger<80){actionContext={type:'eat'};btn.querySelector('.icon').textContent='🍗';document.getElementById('actionLabel').textContent=`MANGER(${player.food})`;btn.classList.add('visible');return;}
+  btn.classList.remove('visible');
+}
+function doAction(){
+  if(!actionContext) return;
+  if(actionContext.type==='portal1') enterDungeon();
+  else if(actionContext.type==='portal2'){
+    if(hasKey){enterFinalBossArena();PORTAL2.open=false;}
+    else showToast('🔒 Il vous faut la 🗝️ clé du Boss Gardien !');
+  }
+  else if(actionContext.type==='gate'){
+    gateOpen=!gateOpen;
+    showToast(gateOpen?'🔓 Porte ouverte !':'🔒 Porte fermée !');
+    playSound('pickup');
+  }
+  else if(actionContext.type==='repair'){
+    player.currentWeapon='hammer';inventory.currentWeapon='hammer';
+    const bw=actionContext.target;repairWall(bw);
+    showToast(`🔨 Réparé ! (${Math.ceil(bw.hp)}/${bw.maxHp})`);
+    playSound('chop');
+    particles.push({type:'spark',x:bw.x+bw.w/2,y:bw.y+bw.h/2,vx:rand(-30,30),vy:rand(-30,30),life:.3,max:.3,size:4});
+  }
+  else if(actionContext.type==='rebuild'){
+    const bw=actionContext.target;
+    if(player.wood>=3&&player.metal>=2){player.wood-=3;player.metal-=2;bw.hp=bw.maxHp;showToast('🧱 Mur reconstruit ! (🪵-3 🔩-2)');playSound('levelup');}
+    else showToast('Besoin : 🪵3 bois + 🔩2 métal');
+  }
+  else if(actionContext.type==='armory') openShop();
+  else if(actionContext.type==='house') lootHouse(actionContext.target);
+  else if(actionContext.type==='emptybag'){emptyBagToResources();showToast('🎒 Sac vidé à la base !');}
+  else if(actionContext.type==='campfire') openCraft();
+  else if(actionContext.type==='tree'){const t=actionContext.target;if(t.hp>0){t.hp--;playSound('chop');particles.push({type:'spark',x:t.x,y:t.y,vx:rand(-40,40),vy:rand(-40,40),life:.2,max:.2,size:4});if(t.hp<=0){const g=(rand(2,4)|0);player.wood+=g;showToast(`🪵+${g}(${player.wood})`);setTimeout(()=>{t.hp=t.maxHp;},20000);}}}
+  else if(actionContext.type==='metal'){const g=(rand(2,5)|0);player.metal+=g;showToast(`🔩+${g}(${player.metal})`);metalPiles.splice(actionContext.index,1);setTimeout(()=>metalPiles.push({x:rand(200,WORLD.w-200),y:rand(200,WORLD.h-200)}),30000);}
+  else if(actionContext.type==='eat'){if(player.food<=0){showToast('Aucune nourriture !');return;}player.food--;player.hunger=Math.min(100,player.hunger+25);showToast('🍗+25 satiété');}
+}
+document.getElementById('actionBtn').addEventListener('click',doAction);
+
+/* ══════════════════════════════════════════════
+   WORLD UPDATE
+══════════════════════════════════════════════ */
+const keys={};
+window.addEventListener('keydown',e=>{keys[e.key]=true;});
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
+function applyKeyboard(dt,dungeon=false){
+  if(gameState!=='playing'&&gameState!=='dungeon') return;
+  let dx=0,dy=0;
+  if(keys['w']||keys['W'])dy-=1;if(keys['s']||keys['S'])dy+=1;
+  if(keys['a']||keys['A'])dx-=1;if(keys['d']||keys['D'])dx+=1;
+  const d=Math.hypot(dx,dy);if(d>0){const spd=dungeon?(dungeonPlayer&&dungeonPlayer.speed||220):player.speed;if(dungeon&&dungeonPlayer){dungeonPlayer.x+=dx/d*spd*dt;dungeonPlayer.y+=dy/d*spd*dt;}else{player.x+=dx/d*spd*dt;player.y+=dy/d*spd*dt;}}
+}
+window.addEventListener('keydown',e=>{
+  if(e.key==='e'||e.key==='E'){if(gameState==='playing')doAction();}
+  if(e.key==='f'||e.key==='F'){if(player&&player.food>0&&player.hunger<100){player.food--;player.hunger=Math.min(100,player.hunger+25);showToast('🍗+25');}}
+  if(e.key==='b'||e.key==='B'&&gameState==='playing') buildWall();
+  if(e.key==='c'||e.key==='C'&&gameState==='playing') openCraft();
+  if(e.key==='Escape'){closeCraft();closeShop();}
+  if(e.key==='1') player&&(player.currentWeapon='pistol');
+  if(e.key==='2'&&player&&player.hasAxe) player.currentWeapon='axe';
+  if(e.key==='3'&&player&&player.ammo.smg>0) player.currentWeapon='smg';
+  if(e.key==='4'&&player&&player.ammo.shotgun>0) player.currentWeapon='shotgun';
+  if(e.key==='5'&&player&&player.ammo.rifle>0) player.currentWeapon='rifle';
+});
+let mouseDown=false;
+function updateMouseAim(e){
+  if(!player) return;
+  const tgt=inDungeon?dungeonPlayer:player;
+  if(!tgt) return;
+  const wld=inDungeon?DW:WORLD.w,wlh=inDungeon?DH:WORLD.h;
+  const camX=clamp(tgt.x-W/2,0,Math.max(0,wld-W));
+  const camY=clamp(tgt.y-H/2,0,Math.max(0,wlh-H));
+  const angle=Math.atan2(e.clientY+camY-tgt.y,e.clientX+camX-tgt.x);
+  if(inDungeon&&dungeonPlayer) dungeonPlayer.aimAngle=angle; else player.aimAngle=angle;
+  player.firing=true;
+}
+canvas.addEventListener('pointerdown',e=>{
+  const jL=document.getElementById('joyLeft').getBoundingClientRect(),jR=document.getElementById('joyRight').getBoundingClientRect();
+  if(e.clientX>=jL.left&&e.clientX<=jL.right&&e.clientY>=jL.top&&e.clientY<=jL.bottom) return;
+  if(e.clientX>=jR.left&&e.clientX<=jR.right&&e.clientY>=jR.top&&e.clientY<=jR.bottom) return;
+  mouseDown=true;updateMouseAim(e);
+});
+canvas.addEventListener('pointermove',e=>{if(mouseDown)updateMouseAim(e);});
+canvas.addEventListener('pointerup',()=>{mouseDown=false;if(player)player.firing=false;});
+canvas.addEventListener('pointercancel',()=>{mouseDown=false;if(player)player.firing=false;});
+
+function updateWorldBullets(dt){
+  const wallObs=craftedWalls.map(w=>({x:w.x,y:w.y,w:w.w,h:w.h}));
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+    if(b.life<=0||b.x<0||b.x>WORLD.w||b.y<0||b.y>WORLD.h){bullets.splice(i,1);continue;}
+    let rm=false;
+    for(const r of [...worldStaticObs,...wallObs]){if(pInR(b.x,b.y,r)){particles.push({type:'spark',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.15,max:.15,size:3});bullets.splice(i,1);rm=true;break;}}
+    if(rm) continue;
+    for(let j=zombies.length-1;j>=0;j--){const z=zombies[j];if(dist(b.x,b.y,z.x,z.y)<z.radius){z.hp-=b.damage;playSound('zHit');particles.push({type:'blood',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.3,max:.3,size:4});bullets.splice(i,1);if(z.hp<=0)killZombie(z,j);rm=true;break;}}
+    if(rm) continue;
+    if(finalBoss&&dist(b.x,b.y,finalBoss.x,finalBoss.y)<finalBoss.radius){finalBoss.hp-=b.damage;playSound('zHit');particles.push({type:'blood',x:b.x,y:b.y,vx:rand(-40,40),vy:rand(-40,40),life:.3,max:.3,size:4});bullets.splice(i,1);if(finalBoss.hp<=0)killFinalBoss();}
+  }
+}
+function updateWorldZombies(dt){
+  const bwObs=getBaseWallObs();
+  const wallObs=[...craftedWalls.map(w=>({x:w.x,y:w.y,w:w.w,h:w.h})),...bwObs];
+
+  for(const z of zombies){
+    const dx=player.x-z.x,dy=player.y-z.y,d=Math.hypot(dx,dy)||1;
+    z.x+=(dx/d)*z.speed*dt;z.y+=(dy/d)*z.speed*dt;
+    z.angle=Math.atan2(dy,dx);z.walkPhase+=dt*8;
+    if(z.hitCooldown>0) z.hitCooldown-=dt;
+  }
+  for(let i=0;i<zombies.length;i++){
+    for(let j=i+1;j<zombies.length;j++){
+      const a=zombies[i],b=zombies[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.radius+b.radius;
+      if(d>.001&&d<m){const ov=(m-d)/2,nx=dx/d,ny=dy/d;a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;}
+    }
+  }
+  for(const z of zombies) resolveObs(z,worldStaticObs,wallObs);
+
+  // Zombies attaquent les murs craftés
+  for(const z of zombies){
+    for(let k=craftedWalls.length-1;k>=0;k--){
+      const w=craftedWalls[k],cx=clamp(z.x,w.x,w.x+w.w),cy=clamp(z.y,w.y,w.y+w.h);
+      if(dist(z.x,z.y,cx,cy)<z.radius+4&&z.hitCooldown<=0){w.hp-=.5;if(w.hp<=0){craftedWalls.splice(k,1);showToast('🧱 Mur détruit !');}}
+    }
+  }
+
+  // Zombies attaquent les MURS DE LA BASE la nuit
+  if(isNight){
+    for(const z of zombies){
+      if(z.hitCooldown>0) continue;
+      for(const bw of baseWalls){
+        if(bw.hp<=0||(bw.isGate&&gateOpen)) continue;
+        // Distance du zombie au centre du segment
+        if(dist(z.x,z.y,bw.cx,bw.cy)<z.radius+bw.ht+8){
+          const dmg={walker:2,runner:1.5,brute:6,boss:12}[z.type]||2;
+          bw.hp=Math.max(0,bw.hp-dmg*0.8);
+          if(bw.hp<=0) showToast('🧱 Section de mur détruite ! Réparez-la le jour.');
+          break;
+        }
+      }
+    }
+  }
+
+  // Dégâts joueur
+  const inBase=dist(player.x,player.y,BASE.x,BASE.y)<BASE_LEVELS[baseLevel].radius;
+  if(!inBase){
+    for(const z of zombies){
+      if(dist(player.x,player.y,z.x,z.y)<player.radius+z.radius+4&&z.hitCooldown<=0){damagePlayer(z.damage);z.hitCooldown=.8;}
+    }
+  }
+
+  // Final boss
+  if(finalBoss){
+    const dx=player.x-finalBoss.x,dy=player.y-finalBoss.y,d=Math.hypot(dx,dy)||1;
+    finalBoss.x+=(dx/d)*finalBoss.speed*dt;finalBoss.y+=(dy/d)*finalBoss.speed*dt;
+    finalBoss.angle=Math.atan2(dy,dx);finalBoss.walkPhase+=dt*5;if(finalBoss.hitCooldown>0)finalBoss.hitCooldown-=dt;
+    resolveObs(finalBoss,worldStaticObs);
+    if(dist(player.x,player.y,finalBoss.x,finalBoss.y)<player.radius+finalBoss.radius+4&&finalBoss.hitCooldown<=0){damagePlayer(finalBoss.damage);finalBoss.hitCooldown=1.0;}
+  }
+}
+
+function update(dt,t){
+  if(gameState==='dungeon'){updateDungeon(dt);updateToasts(dt);updateLights(dt,t);return;}
+  if(gameState!=='playing') return;
+  survivalTime+=dt;
+  // Player movement + collision avec murs de base
+  player.x+=leftStick.x*player.speed*dt;player.y+=leftStick.y*player.speed*dt;
+  applyKeyboard(dt,false);
+  const allWallObs=[...craftedWalls.map(w=>({x:w.x,y:w.y,w:w.w,h:w.h})),...getBaseWallObs()];
+  resolveObs(player,worldStaticObs,allWallObs);
+  if(rightStick.active){player.aimAngle=Math.atan2(rightStick.y,rightStick.x);player.firing=true;}else player.firing=false;
+  if(player.firing) fireWorld();
+  if(player.fireCooldown>0) player.fireCooldown-=dt;
+  if(player.invuln>0) player.invuln-=dt;
+  if(screenShake>0) screenShake=Math.max(0,screenShake-dt*1.2);
+  // speed boost
+  if(player.speedTimer>0){player.speedTimer-=dt;player.speed=352;if(player.speedTimer<=0){player.speed=220;player.speedTimer=0;}}
+  // Hunger
+  player.hunger=Math.max(0,player.hunger-player.hungerDecay*dt/60);
+  if(player.hunger<=0) damagePlayer(3*dt);
+  // Base regen
+  playerInBase=dist(player.x,player.y,BASE.x,BASE.y)<BASE_LEVELS[baseLevel].radius;
+  if(playerInBase&&player.health<100) player.health=Math.min(100,player.health+BASE_LEVELS[baseLevel].regenRate*dt);
+  // Updates
+  updateWorldBullets(dt);updateWorldZombies(dt);updateFoodDrops();
+  updateParticles(dt);updateWaveLogic(dt);updateDayNight(dt);updateToasts(dt);updateLights(dt,t);
+  checkAction();
+  // Timer swing batte
+  if(batSwing.active){batSwing.timer-=dt;if(batSwing.timer<=0)batSwing.active=false;}
+  // Timer recul arme
+  if(gunAnim.recoil>0) gunAnim.recoil=Math.max(0,gunAnim.recoil-dt*4);
+  if(gunAnim.muzzleTimer>0) gunAnim.muzzleTimer=Math.max(0,gunAnim.muzzleTimer-dt);
+}
+function updateParticles(dt){for(let i=particles.length-1;i>=0;i--){const p=particles[i];if(p.vx)p.x+=p.vx*dt;if(p.vy)p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}}
+function updateLights(dt,t){for(const l of lights) l.flicker=.85+Math.sin(t*3+l.phase)*.1+Math.random()*.04;campfireFlicker=.8+Math.sin(t*8+campfirePhase)*.15+Math.random()*.05;campfirePhase+=dt;}
+
+/* ══════════════════════════════════════════════
+   RENDER — WORLD
+══════════════════════════════════════════════ */
+function drawRectShaded(c,r,base,hi,lo){c.fillStyle=base;c.fillRect(r.x,r.y,r.w,r.h);c.fillStyle=hi;c.fillRect(r.x,r.y,r.w,3);c.fillStyle=lo;c.fillRect(r.x,r.y+r.h-3,r.w,3);}
+function drawWorldFloor(camX,camY){
+  const sx=Math.floor(camX/100)*100,sy=Math.floor(camY/100)*100;
+  ctx.fillStyle='#161a1e';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,0,0,.18)';ctx.lineWidth=1.5;
+  for(let x=sx;x<camX+W+100;x+=100){ctx.beginPath();ctx.moveTo(x,camY);ctx.lineTo(x,camY+H);ctx.stroke();}
+  for(let y=sy;y<camY+H+100;y+=100){ctx.beginPath();ctx.moveTo(camX,y);ctx.lineTo(camX+W,y);ctx.stroke();}
+  for(const s of floorStains){if(s.x<camX-30||s.x>camX+W+30||s.y<camY-30||s.y>camY+H+30)continue;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,0,0,${s.a})`;ctx.fill();}
+}
+function drawWorldWalls(){
+  for(const r of worldOuter) drawRectShaded(ctx,r,'#23262a','rgba(255,255,255,.06)','rgba(0,0,0,.4)');
+  for(const r of worldHalfWalls) drawRectShaded(ctx,r,'#2a2d31','rgba(255,255,255,.05)','rgba(0,0,0,.35)');
+  for(const r of worldPillars) drawRectShaded(ctx,r,'#34383c','rgba(255,255,255,.08)','rgba(0,0,0,.4)');
+  for(const r of worldCrates) drawRectShaded(ctx,r,'#4a3526','rgba(255,200,140,.10)','rgba(0,0,0,.4)');
+  for(const w of craftedWalls){const hp=w.hp/w.maxHp,col=hp>.6?'#4a6a8a':hp>.3?'#6a5a3a':'#6a3a2a';drawRectShaded(ctx,w,col,'rgba(255,255,255,.12)','rgba(0,0,0,.5)');if(w.hp<w.maxHp){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(w.x,w.y-8,w.w,5);ctx.fillStyle=hp>.5?'#4aaa4a':'#c0212f';ctx.fillRect(w.x,w.y-8,w.w*hp,5);}}
+}
+function drawTrees(){for(const t of trees){if(t.hp<=0) continue;const {x,y}=t,pc=t.hp/t.maxHp;ctx.fillStyle='#5a3a1a';ctx.beginPath();ctx.ellipse(x,y+12,10,6,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#6a4a2a';ctx.fillRect(x-6,y-10,12,22);ctx.fillStyle=pc>.6?'#3a6a2a':pc>.3?'#6a6a2a':'#5a4a2a';ctx.beginPath();ctx.arc(x,y-16,22,0,Math.PI*2);ctx.fill();if(t.hp<t.maxHp){ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-18,y-44,36,6);ctx.fillStyle='#6aaa2a';ctx.fillRect(x-18,y-44,36*(t.hp/t.maxHp),6);}}}
+function drawMetalPiles(){for(const m of metalPiles){ctx.save();ctx.translate(m.x,m.y);ctx.fillStyle='#607080';ctx.beginPath();ctx.ellipse(0,4,18,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8090a0';for(let i=0;i<4;i++){ctx.beginPath();ctx.ellipse(-8+i*5,-3+Math.sin(i)*3,6,4,i*.4,0,Math.PI*2);ctx.fill();}ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle='#aac0d8';ctx.fillText('🔩',0,-12);ctx.restore();}}
+function drawHouses(){
+  for(const h of houses){
+    const cx=h.x+h.w/2,cy=h.y+h.h/2;
+    ctx.save();
+    // Murs de la maison
+    ctx.fillStyle=h.looted?'#2a2420':'#3a3028';ctx.fillRect(h.x,h.y,h.w,h.h);
+    // Toit
+    ctx.fillStyle=h.looted?'#4a3830':'#6a5040';
+    ctx.beginPath();ctx.moveTo(h.x-4,h.y);ctx.lineTo(cx,h.y-22);ctx.lineTo(h.x+h.w+4,h.y);ctx.closePath();ctx.fill();
+    // Fenêtres
+    ctx.fillStyle=h.looted?'#1a1816':'#c0a060';
+    ctx.fillRect(h.x+8,h.y+10,14,12);ctx.fillRect(h.x+h.w-22,h.y+10,14,12);
+    // Porte
+    ctx.fillStyle=h.looted?'#1a1410':'#8a6040';ctx.fillRect(cx-7,h.y+h.h-20,14,20);
+    // Contour
+    ctx.strokeStyle=h.looted?'#3a3028':'#8a7060';ctx.lineWidth=2;ctx.strokeRect(h.x,h.y,h.w,h.h);
+    // Label
+    ctx.font='10px Oswald,sans-serif';ctx.fillStyle=h.looted?'#5a5048':'#d4c090';
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(h.looted?'Fouillée':'🏠 Fouiller',cx,h.y-26);
+    // Glow si pas encore fouillée
+    if(!h.looted){
+      ctx.globalCompositeOperation='lighter';
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,50);
+      g.addColorStop(0,'rgba(200,160,80,.08)');g.addColorStop(1,'rgba(200,160,80,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,50,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+// ══ INVENTAIRE BAS — case arme + case sac ══
+function drawBagHUD(c){
+  const slotW=62, slotH=62, gap=5;
+  // 1 case arme + 3 cases sac = 4 cases
+  const totalW = slotW + gap + gap + 3*(slotW+gap) - gap; // arme | séparateur | 3 sac
+  const startX = W/2 - totalW/2;
+  const y = H - slotH - 8; // collé tout en bas
+
+  const ICONS={wood:'🪵',metal:'🔩',money:'💰'};
+  const WEAPON_ICONS={bat:'🏏',axe:'🪓',smg:'🔫',shotgun:'💥',rifle:'🎯'};
+
+  // ── CASE ARME COURANTE ──
+  const wx = startX;
+  const ww = WEAPONS[player.currentWeapon];
+  const isActive = true;
+  // fond arme — légèrement doré pour distinguer
+  c.fillStyle='rgba(60,45,20,0.92)';
+  rrp(c,wx,y,slotW,slotH,6);c.fill();
+  c.strokeStyle='rgba(255,200,60,0.85)';c.lineWidth=2.5;
+  rrp(c,wx,y,slotW,slotH,6);c.stroke();
+  // icône arme
+  c.font='26px serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(WEAPON_ICONS[player.currentWeapon]||'🔫',wx+slotW/2,y+slotH/2-8);
+  // ammo ou MÊLÉE
+  c.font='700 10px Oswald,sans-serif';c.textBaseline='bottom';
+  const ammoTxt = ww.melee?'MÊLÉE':ww.maxAmmo===Infinity?'∞':String(player.ammo[player.currentWeapon]||0);
+  c.fillStyle = ww.melee?'#c8a060':'#ffd166';
+  c.fillText(ammoTxt, wx+slotW/2, y+slotH-3);
+  // label "ARME" en haut du slot
+  c.font='8px Oswald,sans-serif';c.fillStyle='rgba(255,200,60,0.6)';c.textBaseline='top';
+  c.fillText('ARME',wx+3,y+3);
+
+  // ── SÉPARATEUR ──
+  const sepX = wx + slotW + gap;
+  c.strokeStyle='rgba(255,255,255,0.12)';c.lineWidth=1;
+  c.beginPath();c.moveTo(sepX,y+4);c.lineTo(sepX,y+slotH-4);c.stroke();
+
+  // ── CASE SAC (label) ──
+  const bagLabelX = sepX + gap;
+  c.font='8px Oswald,sans-serif';c.fillStyle='rgba(200,160,80,0.7)';
+  c.textAlign='left';c.textBaseline='top';
+  c.fillText('🎒 SAC',bagLabelX,y+3);
+
+  // ── 3 SLOTS DU SAC ──
+  for(let i=0;i<3;i++){
+    const sx = bagLabelX + i*(slotW+gap);
+    const slot = inventory.bag[i];
+    // fond
+    c.fillStyle = slot?'rgba(45,34,18,0.92)':'rgba(16,14,10,0.7)';
+    rrp(c,sx,y,slotW,slotH,6);c.fill();
+    c.strokeStyle = slot?'rgba(200,160,80,0.6)':'rgba(255,255,255,0.12)';
+    c.lineWidth=1.5;rrp(c,sx,y,slotW,slotH,6);c.stroke();
+    if(slot){
+      c.font='22px serif';c.textAlign='center';c.textBaseline='middle';
+      c.fillText(ICONS[slot.type]||'?',sx+slotW/2,y+slotH/2-7);
+      c.font='700 11px Oswald,sans-serif';c.fillStyle='#ffd166';c.textBaseline='bottom';
+      c.fillText('×'+slot.qty,sx+slotW/2,y+slotH-3);
+    } else {
+      c.font='10px Oswald,sans-serif';c.fillStyle='rgba(255,255,255,0.15)';
+      c.textAlign='center';c.textBaseline='middle';
+      c.fillText('vide',sx+slotW/2,y+slotH/2);
+    }
+    c.font='8px Oswald,sans-serif';c.fillStyle='rgba(255,255,255,0.22)';
+    c.textAlign='left';c.textBaseline='top';c.fillText(i+1,sx+3,y+3);
+  }
+
+  // Hint si sac plein
+  if(inventory.bag.every(s=>s!==null)){
+    c.font='500 10px Oswald,sans-serif';c.fillStyle='#ffaa40';
+    c.textAlign='center';c.textBaseline='bottom';
+    c.fillText('Sac plein — videz à la base 🔥',W/2,y-4);
+  }
+  c.textAlign='left';
+}
+function drawPortals(t){
+  function drawPortal(p,c,label){
+    if(!p.open) return;
+    const pulse=1+Math.sin(t*4)*.12;
+    ctx.save();
+    // outer glow
+    ctx.globalCompositeOperation='lighter';
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.radius*2*pulse);
+    const [r,gv,b]=c==='#40a0ff'?[64,160,255]:[192,64,255];
+    g.addColorStop(0,`rgba(${r},${gv},${b},.35)`);g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.radius*2*pulse,0,Math.PI*2);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    // portal ring
+    ctx.strokeStyle=c;ctx.lineWidth=5*pulse;
+    ctx.shadowColor=c;ctx.shadowBlur=20;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.radius*pulse,0,Math.PI*2);ctx.stroke();
+    // inner swirl
+    ctx.fillStyle=`rgba(${[64,160,255,192,64,255].slice(c==='#40a0ff'?0:3,c==='#40a0ff'?3:6).join(',')},0.3)`;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.radius*.6,0,Math.PI*2);ctx.fill();
+    // emoji
+    ctx.shadowBlur=0;ctx.font=`${28+Math.sin(t*3)*3}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c==='#40a0ff'?'🌀':'🔮',p.x,p.y);
+    // label
+    ctx.font='bold 12px Oswald,sans-serif';ctx.fillStyle=c;ctx.textBaseline='top';ctx.fillText(label,p.x,p.y+p.radius+8);
+    ctx.restore();
+  }
+  drawPortal(PORTAL1,'#40a0ff','LABORATOIRE');
+  drawPortal(PORTAL2,'#c040ff',hasKey?'BOSS FINAL':'🔒 CLÉ REQUISE');
+}
+function drawBase(){
+  const basR=BASE_LEVELS[baseLevel].radius,campR=BASE_LEVELS[baseLevel].campRadius;
+  ctx.save();ctx.globalAlpha=.10;ctx.fillStyle='#c0a040';ctx.beginPath();ctx.arc(BASE.x,BASE.y,basR,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=.25;ctx.strokeStyle=playerInBase?'#ffd166':'#a08030';ctx.lineWidth=3;ctx.setLineDash([12,8]);ctx.beginPath();ctx.arc(BASE.x,BASE.y,basR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  ctx.save();ctx.globalCompositeOperation='lighter';const fr=campR*campfireFlicker;const fg=ctx.createRadialGradient(BASE.x,BASE.y,0,BASE.x,BASE.y,fr);fg.addColorStop(0,`rgba(255,160,40,${.25*campfireFlicker})`);fg.addColorStop(.5,`rgba(200,80,10,${.12*campfireFlicker})`);fg.addColorStop(1,'rgba(200,80,10,0)');ctx.fillStyle=fg;ctx.beginPath();ctx.arc(BASE.x,BASE.y,fr,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.fillStyle='#5a5550';for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ctx.beginPath();ctx.ellipse(BASE.x+Math.cos(a)*22,BASE.y+Math.sin(a)*16,7,5,a,0,Math.PI*2);ctx.fill();}
+  ctx.strokeStyle='#5a3a18';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(BASE.x-16,BASE.y+8);ctx.lineTo(BASE.x+16,BASE.y-8);ctx.stroke();ctx.beginPath();ctx.moveTo(BASE.x-16,BASE.y-8);ctx.lineTo(BASE.x+16,BASE.y+8);ctx.stroke();
+  const nf=3+baseLevel;for(let fi=0;fi<nf;fi++){const fo=fi/nf*Math.PI*2,fh=(14+baseLevel*2)*campfireFlicker;ctx.save();ctx.translate(BASE.x+Math.cos(fo+campfirePhase*2)*5,BASE.y+Math.sin(fo+campfirePhase*2)*4-4);ctx.globalAlpha=.85;const ffg=ctx.createRadialGradient(0,0,0,0,-fh*.5,fh);ffg.addColorStop(0,'rgba(255,240,80,.95)');ffg.addColorStop(.4,'rgba(255,120,20,.85)');ffg.addColorStop(1,'rgba(180,20,0,0)');ctx.fillStyle=ffg;ctx.beginPath();ctx.moveTo(0,4);ctx.quadraticCurveTo(-6,-fh*.4,0,-fh);ctx.quadraticCurveTo(6,-fh*.4,0,4);ctx.fill();ctx.restore();}
+  ctx.font='600 12px Oswald,sans-serif';ctx.fillStyle='#ffd166';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(`🔥 ${BASE_LEVELS[baseLevel].label}`,BASE.x,BASE.y+32);ctx.textAlign='left';
+}
+function drawZombie(c,z,t){
+  const isBoss=z.type==='boss'||z.type==='final';const stats=ZOMBIE_TYPES[z.type];
+  c.save();c.translate(z.x,z.y);
+  const ls=Math.sin(z.walkPhase)*4;c.fillStyle=stats.dark;
+  c.beginPath();c.ellipse(-6,z.radius-2+ls*.3,z.radius*(isBoss?.28:.35),isBoss?8:6,0,0,Math.PI*2);c.fill();
+  c.beginPath();c.ellipse(6,z.radius-2-ls*.3,z.radius*(isBoss?.28:.35),isBoss?8:6,0,0,Math.PI*2);c.fill();
+  c.rotate(z.angle);
+  const g=c.createRadialGradient(-z.radius*.3,-z.radius*.3,2,0,0,z.radius*1.3);g.addColorStop(0,stats.color);g.addColorStop(1,stats.dark);c.fillStyle=g;
+  c.beginPath();c.ellipse(0,0,z.radius,z.radius*.85,0,0,Math.PI*2);c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=2;c.stroke();
+  c.beginPath();c.arc(z.radius*.55,0,z.radius*.45,0,Math.PI*2);c.fillStyle=stats.dark;c.fill();
+  if(z.type==='final'||z.type==='boss'){c.fillStyle=z.type==='final'?'rgba(255,80,255,.95)':'rgba(255,50,220,.9)';for(const ey of[-z.radius*.2,z.radius*.2]){c.beginPath();c.arc(z.radius*.7,ey,z.type==='final'?5:4,0,Math.PI*2);c.fill();}}
+  else{c.fillStyle='rgba(0,0,0,.7)';for(const ey of[-z.radius*.18,z.radius*.18]){c.beginPath();c.arc(z.radius*.68,ey,2.4,0,Math.PI*2);c.fill();}}
+  c.restore();
+  if(z.hp<z.maxHp){const bw=z.radius*2.4;c.fillStyle='rgba(0,0,0,.5)';c.fillRect(z.x-bw/2,z.y-z.radius-14,bw,7);const hc=z.type==='final'?'#ff40ff':z.type==='boss'?'#c050ff':'#c0212f';c.fillStyle=hc;c.fillRect(z.x-bw/2,z.y-z.radius-14,bw*Math.max(0,z.hp/z.maxHp),7);if(isBoss){c.font='bold 11px Oswald,sans-serif';c.fillStyle=hc;c.textAlign='center';c.fillText(z.type==='final'?'👹 BOSS FINAL':z.isBossGuardian?'💀 BOSS GARDIEN':'👹 BOSS',z.x,z.y-z.radius-22);c.textAlign='left';}}
+}
+function drawPlayer(c,p){
+  c.save();c.translate(p.x,p.y);
+  // Jambes
+  c.fillStyle='#1f2a33';
+  c.beginPath();c.ellipse(-5,p.radius-3,6,7,0,0,Math.PI*2);c.fill();
+  c.beginPath();c.ellipse(5,p.radius-3,6,7,0,0,Math.PI*2);c.fill();
+
+  // ── Animation arc de swing batte ──
+  if(batSwing.active&&player.currentWeapon==='bat'){
+    const progress=1-(batSwing.timer/batSwing.duration);
+    const swingAngle=batSwing.angle-Math.PI*0.6+progress*Math.PI*1.1;
+    const batLen=46;
+    const bx=Math.cos(swingAngle)*batLen,by=Math.sin(swingAngle)*batLen;
+    // Traîne
+    c.save();c.globalAlpha=0.22*(1-progress);
+    c.strokeStyle='#e8c080';c.lineWidth=6;c.lineCap='round';
+    const ta=swingAngle-.5;
+    c.beginPath();c.moveTo(Math.cos(ta)*12,Math.sin(ta)*12);c.lineTo(Math.cos(ta)*batLen,Math.sin(ta)*batLen);c.stroke();
+    c.restore();
+    // Batte
+    c.save();c.strokeStyle='#c8a060';c.lineWidth=5;c.lineCap='round';
+    c.beginPath();c.moveTo(Math.cos(swingAngle)*10,Math.sin(swingAngle)*10);c.lineTo(bx,by);c.stroke();
+    c.fillStyle='#e0b870';c.beginPath();c.arc(bx,by,6,0,Math.PI*2);c.fill();
+    if(progress>.45&&progress<.75){c.globalAlpha=(0.75-progress)*4;c.fillStyle='#fff8c0';c.beginPath();c.arc(bx,by,10,0,Math.PI*2);c.fill();}
+    c.restore();
+  }
+
+  // ── Recul : on translate légèrement en arrière ──
+  const recoilDist = gunAnim.recoil * 8;
+  c.rotate(p.aimAngle);
+  c.translate(-recoilDist, 0); // recul vers l'arrière
+
+  // ── Arme selon type ──
+  const w=WEAPONS[player.currentWeapon];
+  if(player.currentWeapon==='bat'){
+    if(!batSwing.active){
+      c.fillStyle='#c8a060';
+      c.beginPath();c.moveTo(p.radius*.3,-3);c.lineTo(p.radius+14,-3);c.lineTo(p.radius+18,5);c.lineTo(p.radius*.3,5);c.closePath();c.fill();
+      c.fillStyle='#e0c080';c.beginPath();c.arc(p.radius+16,1,5,0,Math.PI*2);c.fill();
+    }
+  } else if(player.currentWeapon==='hammer'){
+    // Manche
+    c.fillStyle='#8a6030';c.fillRect(p.radius*.3,-2,p.radius*.8,4);
+    // Tête du marteau
+    c.fillStyle='#909090';c.fillRect(p.radius+4,-7,12,14);
+    c.fillStyle='#b0b0b0';c.fillRect(p.radius+4,-7,12,3);
+  } else if(player.currentWeapon==='axe'){
+    c.fillStyle='#6a4020';c.fillRect(p.radius*.2,-2,p.radius*.9,4);
+    c.fillStyle='#c87a30';
+    c.beginPath();c.moveTo(p.radius+2,-10);c.lineTo(p.radius+18,-6);c.lineTo(p.radius+18,8);c.lineTo(p.radius+2,8);c.closePath();c.fill();
+    c.fillStyle='#e09040';c.beginPath();c.moveTo(p.radius+2,-10);c.lineTo(p.radius+18,-6);c.lineTo(p.radius+14,-6);c.lineTo(p.radius+2,-6);c.closePath();c.fill();
+  } else if(player.currentWeapon==='smg'){
+    // Corps SMG
+    c.fillStyle='#404040';c.fillRect(p.radius*.4,-4,22,8);
+    // Canon
+    c.fillStyle='#303030';c.fillRect(p.radius*.4+20,-2.5,10,5);
+    // Chargeur
+    c.fillStyle='#505050';c.fillRect(p.radius*.4+4,4,7,8);
+    // Flash bouche si tir
+    if(gunAnim.muzzleTimer>0){
+      const ft=gunAnim.muzzleTimer/.08;
+      c.fillStyle=`rgba(255,220,80,${ft*.9})`;c.beginPath();c.arc(p.radius*.4+32,0,5*ft,0,Math.PI*2);c.fill();
+      c.fillStyle=`rgba(255,255,200,${ft*.7})`;c.beginPath();c.arc(p.radius*.4+32,0,2*ft,0,Math.PI*2);c.fill();
+    }
+  } else if(player.currentWeapon==='shotgun'){
+    // Double canon
+    c.fillStyle='#3a2a18';c.fillRect(p.radius*.4,-5,30,4);
+    c.fillStyle='#3a2a18';c.fillRect(p.radius*.4,-1,30,4);
+    // Crosse
+    c.fillStyle='#5a3a20';c.fillRect(p.radius*.4,-6,10,10);
+    // Flash bouche large si tir
+    if(gunAnim.muzzleTimer>0){
+      const ft=gunAnim.muzzleTimer/.08;
+      c.fillStyle=`rgba(255,160,40,${ft*.95})`;c.beginPath();c.arc(p.radius*.4+32,0,10*ft,0,Math.PI*2);c.fill();
+      c.fillStyle=`rgba(255,240,150,${ft*.8})`;c.beginPath();c.arc(p.radius*.4+32,0,5*ft,0,Math.PI*2);c.fill();
+      // Fumée
+      c.globalAlpha=ft*.3;c.fillStyle='#cccccc';
+      c.beginPath();c.arc(p.radius*.4+38,-4,8*ft,0,Math.PI*2);c.fill();
+      c.globalAlpha=1;
+    }
+  } else if(player.currentWeapon==='rifle'){
+    // Corps long
+    c.fillStyle='#2a3030';c.fillRect(p.radius*.4,-3,34,6);
+    // Canon fin et long
+    c.fillStyle='#202828';c.fillRect(p.radius*.4+28,-1.5,14,3);
+    // Viseur
+    c.fillStyle='#404848';c.fillRect(p.radius*.4+10,-6,4,4);
+    // Crosse
+    c.fillStyle='#3a4040';c.fillRect(p.radius*.4,-5,10,4);
+    // Flash bouche précis
+    if(gunAnim.muzzleTimer>0){
+      const ft=gunAnim.muzzleTimer/.08;
+      c.fillStyle=`rgba(255,240,120,${ft*.9})`;c.beginPath();c.arc(p.radius*.4+43,0,4*ft,0,Math.PI*2);c.fill();
+      c.fillStyle=`rgba(255,255,255,${ft*.7})`;c.beginPath();c.arc(p.radius*.4+43,0,2*ft,0,Math.PI*2);c.fill();
+    }
+  }
+
+  // ── Corps du joueur ──
+  const gr=c.createRadialGradient(-6,-6,2,0,0,p.radius*1.3);
+  const bl=p.invuln>0&&Math.floor(p.invuln*20)%2===0;
+  gr.addColorStop(0,bl?'#fff':'#5478a8');gr.addColorStop(1,bl?'#ccc':'#1c2a3d');
+  c.fillStyle=gr;c.beginPath();c.ellipse(0,0,p.radius,p.radius*.9,0,0,Math.PI*2);c.fill();
+  c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=2;c.stroke();
+  // Tête
+  c.beginPath();c.arc(p.radius*.5,0,p.radius*.42,0,Math.PI*2);c.fillStyle='#d8b48c';c.fill();
+  c.restore();
+}
+function drawParticleSet(c,ps){
+  for(const p of ps){
+    const a=Math.max(0,p.life/p.max);c.globalAlpha=a;
+    if(p.type==='blood'){c.fillStyle='#7a1015';c.beginPath();c.arc(p.x,p.y,p.size,0,Math.PI*2);c.fill();}
+    else if(p.type==='spark'){c.fillStyle='#ffd166';c.beginPath();c.arc(p.x,p.y,p.size,0,Math.PI*2);c.fill();}
+    else if(p.type==='flash'){
+      // Flash avec halo
+      c.fillStyle='#fff8c0';c.beginPath();c.arc(p.x,p.y,p.size*a,0,Math.PI*2);c.fill();
+      c.globalAlpha=a*.4;c.fillStyle='#ffdd60';c.beginPath();c.arc(p.x,p.y,p.size*a*1.8,0,Math.PI*2);c.fill();
+    }
+    else if(p.type==='shell'){
+      // Douille dorée
+      c.save();c.globalAlpha=a;
+      c.fillStyle='#c8a030';
+      c.beginPath();c.ellipse(p.x,p.y,p.size,p.size*.5,Math.atan2(p.vy,p.vx),0,Math.PI*2);c.fill();
+      c.strokeStyle='#e0c050';c.lineWidth=.5;c.stroke();
+      c.restore();
+    }
+    c.globalAlpha=1;
+  }
+}
+function drawFoodDrops(c,t){for(const f of foodDrops){const b=Math.sin(t*3+f.bobPhase)*3;c.save();c.translate(f.x,f.y+b);c.font='20px serif';c.textAlign='center';c.textBaseline='middle';c.fillText(f.isKey?'🗝️':'🍗',0,0);c.restore();}}
+
+const darkCanvas=document.createElement('canvas');const darkCtx=darkCanvas.getContext('2d');
+function drawDarkness(c,camX,camY,sx,sy,lts,extraLight,ww,wh){
+  darkCanvas.width=W;darkCanvas.height=H;
+  const dk=.28+nightAlpha*.6;
+  darkCtx.globalCompositeOperation='source-over';darkCtx.fillStyle=`rgba(2,3,12,${dk})`;darkCtx.fillRect(0,0,W,H);
+  darkCtx.globalCompositeOperation='destination-out';
+  // Campfire (world only)
+  if(extraLight){const {x,y,r}=extraLight;const gx=x-camX+sx,gy=y-camY+sy;const g=darkCtx.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,'rgba(255,255,255,.98)');g.addColorStop(.5,'rgba(255,200,80,.65)');g.addColorStop(1,'rgba(255,100,0,0)');darkCtx.fillStyle=g;darkCtx.beginPath();darkCtx.arc(gx,gy,r,0,Math.PI*2);darkCtx.fill();}
+  for(const l of lts){const lx=l.x-camX+sx,ly=l.y-camY+sy,r=l.r*l.flicker*(1-nightAlpha*.6);if(r<10)continue;const g=darkCtx.createRadialGradient(lx,ly,0,lx,ly,r);g.addColorStop(0,'rgba(255,255,255,.9)');g.addColorStop(.6,'rgba(255,255,255,.45)');g.addColorStop(1,'rgba(255,255,255,0)');darkCtx.fillStyle=g;darkCtx.beginPath();darkCtx.arc(lx,ly,r,0,Math.PI*2);darkCtx.fill();}
+  const plRef=inDungeon&&dungeonPlayer?dungeonPlayer:player;
+  {const px=plRef.x-camX+sx,py=plRef.y-camY+sy,r=isNight&&!inDungeon?100:160;const g=darkCtx.createRadialGradient(px,py,0,px,py,r);g.addColorStop(0,'rgba(255,255,255,.85)');g.addColorStop(.7,'rgba(255,255,255,.3)');g.addColorStop(1,'rgba(255,255,255,0)');darkCtx.fillStyle=g;darkCtx.beginPath();darkCtx.arc(px,py,r,0,Math.PI*2);darkCtx.fill();}
+  darkCtx.globalCompositeOperation='source-over';c.drawImage(darkCanvas,0,0);
+}
+
+/* ══════════════════════════════════════════════
+   RENDER — DUNGEON
+══════════════════════════════════════════════ */
+function drawDungeonFloor(camX,camY){
+  // Green-tinted lab floor
+  dCtx.fillStyle='#0c0f12';dCtx.fillRect(0,0,W,H);
+  dCtx.strokeStyle='rgba(0,80,40,.25)';dCtx.lineWidth=1;
+  const sx=Math.floor(camX/60)*60,sy=Math.floor(camY/60)*60;
+  for(let x=sx;x<camX+W+60;x+=60){dCtx.beginPath();dCtx.moveTo(x,camY);dCtx.lineTo(x,camY+H);dCtx.stroke();}
+  for(let y=sy;y<camY+H+60;y+=60){dCtx.beginPath();dCtx.moveTo(camX,y);dCtx.lineTo(camX+W,y);dCtx.stroke();}
+  // Blood stains
+  dCtx.fillStyle='rgba(80,0,0,.15)';
+  for(let i=0;i<20;i++){dCtx.beginPath();dCtx.arc(rand(100,DW-100),rand(100,DH-100),rand(5,20),0,Math.PI*2);dCtx.fill();}
+}
+function drawDungeonWalls(){
+  for(const r of dungeonWalls){
+    // Only draw if r is not the boss door that's now open
+    const isBossDoor=!dungeonCleared&&r===BOSS_DOOR;
+    drawRectShaded(dCtx,r,'#1a2030','rgba(100,180,255,.08)','rgba(0,0,0,.5)');
+    // Lab decoration
+    dCtx.fillStyle='rgba(0,200,100,.06)';dCtx.fillRect(r.x,r.y,r.w,r.h);
+  }
+}
+function renderDungeon(t){
+  dCtx.fillStyle='#000';dCtx.fillRect(0,0,W,H);
+  if(!dungeonPlayer) return;
+  const camX=clamp(dungeonPlayer.x-W/2,0,Math.max(0,DW-W));
+  const camY=clamp(dungeonPlayer.y-H/2,0,Math.max(0,DH-H));
+  dCtx.save();dCtx.translate(-camX,-camY);
+  drawDungeonFloor(camX,camY);
+  drawDungeonWalls();
+  // Draw boss door indicator
+  if(!dungeonCleared){
+    dCtx.fillStyle='rgba(200,0,0,.4)';dCtx.fillRect(BOSS_DOOR.x,BOSS_DOOR.y,BOSS_DOOR.w,BOSS_DOOR.h);
+    dCtx.font='bold 11px Oswald,sans-serif';dCtx.fillStyle='#ff4040';dCtx.textAlign='center';dCtx.fillText('🔒 BOSS — TUEZ TOUS LES ZOMBIES',DW/2,BOSS_DOOR.y-8);dCtx.textAlign='left';
+  } else {
+    // Boss room entrance glow
+    dCtx.save();dCtx.globalCompositeOperation='lighter';const g=dCtx.createRadialGradient(DW/2,1080,0,DW/2,1080,120);g.addColorStop(0,'rgba(180,0,80,.3)');g.addColorStop(1,'rgba(180,0,80,0)');dCtx.fillStyle=g;dCtx.beginPath();dCtx.arc(DW/2,1080,120,0,Math.PI*2);dCtx.fill();dCtx.restore();
+  }
+  drawFoodDrops(dCtx,t);
+  // Dungeon zombies
+  for(const z of dungeonZombies) drawZombie(dCtx,z,t);
+  if(labBoss) drawZombie(dCtx,labBoss,t);
+  // Player in dungeon
+  drawPlayer(dCtx,dungeonPlayer);
+  drawParticleSet(dCtx,dungeonParticles);
+  dCtx.restore();
+  // Darkness in dungeon (always dark)
+  const savedNA=nightAlpha;nightAlpha=.65;
+  drawDarkness(dCtx,camX,camY,0,0,dungeonLights,null,DW,DH);
+  nightAlpha=savedNA;
+  // Dungeon HUD
+  drawHUD(dCtx,true);
+  drawToastsUI(dCtx);
+  drawWaveBannerUI(dCtx);
+  // Dungeon entrance arrow
+  if(dungeonZombies.length>0||labBoss){
+    dCtx.textAlign='center';dCtx.font='500 12px Oswald,sans-serif';dCtx.fillStyle='rgba(255,100,100,.8)';
+    dCtx.fillText(`🧟 ${dungeonZombies.length} zombie${dungeonZombies.length!==1?'s':''} restant${dungeonZombies.length!==1?'s':''}${labBoss?' + BOSS':''}`,W/2,H-40);
+    dCtx.textAlign='left';
+  } else if(labBossDefeated){
+    dCtx.textAlign='center';dCtx.font='700 14px Oswald,sans-serif';dCtx.fillStyle='#ffd166';
+    dCtx.fillText('Ramassez la 🗝️ clé !',W/2,H-40);dCtx.textAlign='left';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MINIMAP
+══════════════════════════════════════════════ */
+function drawMinimap(){
+  if(inDungeon){mmCtx.clearRect(0,0,160,100);mmCtx.fillStyle='#0a0c10';mmCtx.fillRect(0,0,160,100);const sx=DW/160,sy=DH/100;mmCtx.fillStyle='#203040';for(const r of dungeonWalls)mmCtx.fillRect(r.x/sx,r.y/sy,Math.max(1,r.w/sx),Math.max(1,r.h/sy));if(dungeonPlayer){mmCtx.fillStyle='#5478a8';mmCtx.beginPath();mmCtx.arc(dungeonPlayer.x/sx,dungeonPlayer.y/sy,4,0,Math.PI*2);mmCtx.fill();}mmCtx.fillStyle='#c0212f';for(const z of dungeonZombies)mmCtx.fillRect(z.x/sx-1.5,z.y/sy-1.5,3,3);if(labBoss){mmCtx.fillStyle='#c050ff';mmCtx.beginPath();mmCtx.arc(labBoss.x/sx,labBoss.y/sy,6,0,Math.PI*2);mmCtx.fill();}return;}
+  const sx=WORLD.w/160,sy=WORLD.h/100;mmCtx.clearRect(0,0,160,100);mmCtx.fillStyle='#0a0c10';mmCtx.fillRect(0,0,160,100);
+  // Base zone
+  mmCtx.fillStyle='rgba(192,160,64,.2)';mmCtx.beginPath();mmCtx.arc(BASE.x/sx,BASE.y/sy,BASE_LEVELS[baseLevel].radius/sx,0,Math.PI*2);mmCtx.fill();
+  // Portals
+  if(PORTAL1.open){mmCtx.fillStyle='#40a0ff';mmCtx.beginPath();mmCtx.arc(PORTAL1.x/sx,PORTAL1.y/sy,5,0,Math.PI*2);mmCtx.fill();}
+  if(PORTAL2.open){mmCtx.fillStyle='#c040ff';mmCtx.beginPath();mmCtx.arc(PORTAL2.x/sx,PORTAL2.y/sy,5,0,Math.PI*2);mmCtx.fill();}
+  // Zombies
+  mmCtx.fillStyle='#c0212f';for(const z of zombies)mmCtx.fillRect(z.x/sx-1.5,z.y/sy-1.5,3,3);
+  if(finalBoss){mmCtx.fillStyle='#ff40ff';mmCtx.beginPath();mmCtx.arc(finalBoss.x/sx,finalBoss.y/sy,7,0,Math.PI*2);mmCtx.fill();}
+  // Player
+  mmCtx.fillStyle='#5478a8';mmCtx.beginPath();mmCtx.arc(player.x/sx,player.y/sy,4,0,Math.PI*2);mmCtx.fill();mmCtx.fillStyle='#ffd166';mmCtx.beginPath();mmCtx.arc(player.x/sx,player.y/sy,2.5,0,Math.PI*2);mmCtx.fill();
+}
+
+/* ══════════════════════════════════════════════
+   HUD & UI
+══════════════════════════════════════════════ */
+function drawHUD(c,isDungeon){
+  c=c||ctx;
+  const barW=220,barH=20,barX=24,barY=24;
+  c.fillStyle='rgba(0,0,0,.5)';rrp(c,barX-4,barY-4,barW+8,barH+8,6);c.fill();
+  c.fillStyle='#3a0d12';rrp(c,barX,barY,barW,barH,4);c.fill();
+  const hg=c.createLinearGradient(barX,0,barX+barW,0);hg.addColorStop(0,'#7a1620');hg.addColorStop(1,'#e23b4d');
+  c.fillStyle=hg;rrp(c,barX,barY,barW*Math.max(0,player.health/100),barH,4);c.fill();
+  c.strokeStyle='rgba(255,255,255,.22)';c.lineWidth=1.5;rrp(c,barX,barY,barW,barH,4);c.stroke();
+  c.fillStyle='#fff';c.font='600 12px Oswald,sans-serif';c.textBaseline='middle';c.textAlign='center';c.fillText(`❤️ ${Math.ceil(Math.max(0,player.health))}`,barX+barW/2,barY+barH/2+1);
+  let ny=barY+barH+6;
+  // Hunger
+  c.fillStyle='rgba(0,0,0,.45)';rrp(c,barX-4,ny-3,barW+8,22,5);c.fill();c.fillStyle='#2a1a0a';rrp(c,barX,ny,barW,16,4);c.fill();
+  const hug=c.createLinearGradient(barX,0,barX+barW,0);hug.addColorStop(0,player.hunger<30?'#8a3010':'#5a3010');hug.addColorStop(1,player.hunger<30?'#ff7030':'#d0802a');
+  c.fillStyle=hug;rrp(c,barX,ny,barW*(player.hunger/100),16,4);c.fill();
+  c.fillStyle='#e8c080';c.font='500 11px Oswald,sans-serif';c.textBaseline='middle';c.textAlign='center';c.fillText(`🍗 ${Math.floor(player.hunger)}% · ${player.food} en poche`,barX+barW/2,ny+8);ny+=22;
+  if(player.armor>0){c.fillStyle='rgba(0,0,0,.45)';rrp(c,barX-4,ny-3,barW+8,22,5);c.fill();c.fillStyle='#0d2040';rrp(c,barX,ny,barW,16,4);c.fill();const ag=c.createLinearGradient(barX,0,barX+barW,0);ag.addColorStop(0,'#1a4a9a');ag.addColorStop(1,'#4aa8ff');c.fillStyle=ag;rrp(c,barX,ny,barW*(player.armor/60),16,4);c.fill();c.fillStyle='#c8e8ff';c.font='500 11px Oswald,sans-serif';c.textBaseline='middle';c.textAlign='center';c.fillText(`🛡️${Math.ceil(player.armor)}/60`,barX+barW/2,ny+8);ny+=22;}
+  // Resources row
+  c.fillStyle='rgba(0,0,0,.55)';rrp(c,barX-4,ny-3,barW+8,22,5);c.fill();c.font='600 13px Oswald,sans-serif';c.textAlign='left';c.textBaseline='middle';
+  c.fillStyle='#d0b870';c.fillText(`🪵${player.wood}`,barX+4,ny+8);
+  c.fillStyle='#90b8d8';c.fillText(`🔩${player.metal}`,barX+74,ny+8);
+  c.fillStyle='#ffd166';c.fillText(`💰${inventory.money}$`,barX+138,ny+8);
+  if(hasKey){c.fillStyle='#ffd166';c.fillText('🗝️',barX+200,ny+8);}
+  // Center
+  c.textAlign='center';c.font='700 16px Oswald,sans-serif';
+  if(isDungeon){c.fillStyle='#40c0ff';c.fillText('🧪 LABORATOIRE',W/2,34);}
+  else{c.fillStyle=isNight?'#c080ff':'#ffd166';c.fillText(isNight?`🌙 NUIT ${dayCount} — Vague ${wave}`:`☀️ JOUR ${dayCount}`,W/2,34);}
+  c.font='400 11px Oswald,sans-serif';c.fillStyle='rgba(200,180,140,.7)';
+  if(!isDungeon) c.fillText(isNight?'Base = zone protégée':'Survivez · Récoltez · Explorez',W/2,52);
+  // Timer
+  if(!isDungeon){c.textAlign='end';c.font='600 15px Oswald,sans-serif';c.fillStyle='#e9e3da';c.fillText(fmtHUD(survivalTime),W-24,34);c.textAlign='left';}
+  // Pas d'update weaponHint (supprimé) — l'arme est visible dans l'inventaire bas
+  if(isNight&&!isDungeon){ctx.fillStyle=`rgba(80,0,120,${.04+nightAlpha*.08})`;ctx.fillRect(0,0,W,H);}
+}
+function drawToastsUI(c){c=c||ctx;let y=90;c.textAlign='center';for(const t of toasts){c.globalAlpha=clamp(t.timer/t.max*2.5,0,1);c.font='500 14px Oswald,sans-serif';c.fillStyle='#ffd166';c.fillText(t.text,W/2,y);c.globalAlpha=1;y+=22;}c.textAlign='left';}
+function drawWaveBannerUI(c){c=c||ctx;if(!waveBanner)return;const a=clamp(waveBanner.timer/waveBanner.max*2.5,0,1);c.save();c.globalAlpha=a;c.textAlign='center';c.font='700 44px Oswald,sans-serif';c.fillStyle=inDungeon?'#40c0ff':isNight?'#c050ff':'#c0212f';c.shadowColor=c.fillStyle;c.shadowBlur=20;c.fillText(waveBanner.text,W/2,H*.36);c.restore();c.textAlign='left';}
+
+function drawBaseWalls(){
+  const t=Date.now()/1000;
+  for(const bw of baseWalls){
+    const open=bw.isGate&&gateOpen;
+    const dead=bw.hp<=0;
+    const hp=bw.hp/bw.maxHp;
+
+    ctx.save();
+    ctx.translate(bw.cx, bw.cy);
+    ctx.rotate(bw.perpAngle);
+
+    if(dead){
+      // Ruines
+      ctx.globalAlpha=0.4;
+      ctx.fillStyle='#5a3020';
+      ctx.fillRect(-bw.hw,-bw.ht,bw.hw*2,bw.ht*2);
+      ctx.strokeStyle='rgba(180,80,40,0.5)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+      ctx.strokeRect(-bw.hw,-bw.ht,bw.hw*2,bw.ht*2);
+      ctx.setLineDash([]);
+      ctx.globalAlpha=1;
+      ctx.restore();
+      continue;
+    }
+    if(open){
+      // Porte ouverte — juste un contour fantôme
+      ctx.globalAlpha=0.25+Math.sin(t*3)*0.08;
+      ctx.strokeStyle='#ffd166';ctx.lineWidth=2;ctx.setLineDash([4,6]);
+      ctx.strokeRect(-bw.hw,-bw.ht,bw.hw*2,bw.ht*2);
+      ctx.setLineDash([]);
+      ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=0.7;
+      ctx.fillText('🚪',0,0);
+      ctx.globalAlpha=1;ctx.restore();
+      continue;
+    }
+
+    // Couleur selon HP
+    const col = bw.isGate ? '#7a6020'
+              : hp>0.7 ? '#4a5a6a'
+              : hp>0.4 ? '#6a5030'
+              : '#7a2a20';
+
+    // Corps du segment
+    ctx.fillStyle=col;
+    ctx.fillRect(-bw.hw,-bw.ht,bw.hw*2,bw.ht*2);
+
+    // Reflet haut
+    ctx.fillStyle='rgba(255,255,255,0.10)';
+    ctx.fillRect(-bw.hw,-bw.ht,bw.hw*2,3);
+
+    // Ombre bas
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.fillRect(-bw.hw,bw.ht-3,bw.hw*2,3);
+
+    // Texture briques (lignes verticales)
+    ctx.strokeStyle='rgba(0,0,0,0.22)';ctx.lineWidth=1;
+    const brickW=20;
+    for(let bx=-bw.hw+brickW;bx<bw.hw;bx+=brickW){
+      ctx.beginPath();ctx.moveTo(bx,-bw.ht);ctx.lineTo(bx,bw.ht);ctx.stroke();
+    }
+
+    // Contour
+    ctx.strokeStyle=bw.isGate?'#ffd166':'rgba(255,255,255,0.18)';
+    ctx.lineWidth=bw.isGate?2:1.5;
+    ctx.strokeRect(-bw.hw,-bw.ht,bw.hw*2,bw.ht*2);
+
+    // Icône porte fermée
+    if(bw.isGate){
+      ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🔒',0,0);
+    }
+
+    ctx.restore();
+
+    // Barre HP (en coordonnées monde, au-dessus du segment)
+    if(hp<1&&!dead){
+      const barW=bw.hw*2;
+      const bx=bw.cx-barW/2, by=bw.cy-bw.ht-10;
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(bx,by,barW,5);
+      ctx.fillStyle=hp>0.5?'#50c030':'#e03020';
+      ctx.fillRect(bx,by,barW*hp,5);
+    }
+
+    // Label "RÉPARER" si endommagé
+    if(hp<1&&!dead&&!bw.isGate){
+      ctx.font='9px Oswald,sans-serif';ctx.fillStyle='rgba(255,200,60,0.8)';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('🔨 [E]',bw.cx,bw.cy-bw.ht-12);
+      ctx.textAlign='left';
+    }
+  }
+
+  // Label porte (hors mur)
+  const gate=baseWalls.find(w=>w.isGate);
+  if(gate&&gate.hp>0){
+    ctx.font='9px Oswald,sans-serif';
+    ctx.fillStyle='#ffd166';ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(gateOpen?'🔓 PORTE OUVERTE [E]':'🔒 PORTE FERMÉE [E]', gate.cx, gate.cy-gate.ht-12);
+    ctx.textAlign='left';
+  }
+}
+function drawArmory(){
+  const {x,y,w,h}=ARMORY;
+  // Bâtiment
+  ctx.fillStyle='#2a3a2a';ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#3a5a3a';ctx.fillRect(x,y,w,8); // toit
+  ctx.strokeStyle='#60a060';ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
+  // Enseigne
+  ctx.fillStyle='#80e080';ctx.font='bold 10px Oswald,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('🏪 ARMURERIE',x+w/2,y+h/2-4);
+  ctx.fillStyle='#ffd166';ctx.font='9px Oswald,sans-serif';
+  ctx.fillText(`💰 ${inventory.money}$`,x+w/2,y+h/2+10);
+  // Glow
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(x+w/2,y+h/2,0,x+w/2,y+h/2,60);
+  g.addColorStop(0,'rgba(80,200,80,0.08)');g.addColorStop(1,'rgba(80,200,80,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x+w/2,y+h/2,60,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.textAlign='left';
+}
+function renderWorld(t){
+  if(!player) return;
+  const camX=clamp(player.x-W/2,0,Math.max(0,WORLD.w-W));
+  const camY=clamp(player.y-H/2,0,Math.max(0,WORLD.h-H));
+  const sx=(Math.random()-.5)*screenShake*18,sy=(Math.random()-.5)*screenShake*18;
+  ctx.save();ctx.translate(-camX+sx,-camY+sy);
+  drawWorldFloor(camX,camY);drawBase();drawBaseWalls();drawTrees();drawMetalPiles();drawHouses();drawWorldWalls();drawArmory();
+  drawPortals(t);
+  drawFoodDrops(ctx,t);
+  for(const z of zombies) drawZombie(ctx,z,t);
+  if(finalBoss) drawZombie(ctx,finalBoss,t);
+  drawPlayer(ctx,player);
+  for(const b of bullets){ctx.save();ctx.shadowColor=b.color;ctx.shadowBlur=8;ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,3.2,0,Math.PI*2);ctx.fill();ctx.restore();}
+  drawParticleSet(ctx,particles);
+  ctx.restore();
+  drawDarkness(ctx,camX,camY,sx,sy,lights,{x:BASE.x,y:BASE.y,r:BASE_LEVELS[baseLevel].campRadius*campfireFlicker*1.5},WORLD.w,WORLD.h);
+  // HUD uniquement pendant le jeu
+  if(gameState==='playing'){drawHUD();drawToastsUI();drawWaveBannerUI();drawBagHUD(ctx);}
+}
+
+function render(t){
+  ctx.fillStyle='#0a0808';
+  ctx.fillRect(0,0,W,H);
+  // On rend toujours la map — même sur l'écran de démarrage et game over
+  if(gameState==='dungeon'){renderDungeon(t);drawMinimap();return;}
+  if(player){
+    renderWorld(t); // visible en start, playing, gameover, victory
+    drawMinimap();
+  }
+}
+
+/* ══════════════════════════════════════════════
+   GAME FLOW
+══════════════════════════════════════════════ */
+function startGame(fullReset){
+  // fullReset=true uniquement depuis le menu principal (nouveau jeu)
+  // fullReset=false (défaut) = "Réessayer" → on garde armes et argent
+  if(fullReset) resetInventory();
+  player=freshPlayer();
+  zombies=[];bullets=[];particles=[];toasts=[];waveBanner=null;foodDrops=[];
+  wave=0;killCount=0;survivalTime=0;
+  waveQueue=[];spawnTimer=0;spawnInterval=1;waveBreakTimer=null;
+  screenShake=0;baseLevel=0;cycleTimer=0;dayCount=1;isNight=false;nightAlpha=0;
+  nightJustStarted=false;dayJustStarted=false;bossSpawnedThisNight=false;
+  craftedWalls=[];dungeonBullets=[];dungeonZombies=[];dungeonParticles=[];
+  labBoss=null;finalBoss=null;finalBossSpawned=false;finalBossDefeated=false;
+  inDungeon=false;dungeonCleared=false;labBossDefeated=false;hasKey=false;
+  PORTAL1.open=false;PORTAL2.open=false;questStep=0;
+  for(const t of trees) t.hp=t.maxHp;
+  buildBaseWalls(); gateOpen=false;
+  spawnHouses();closeCraft();closeShop();
+  dCanvas.style.display='none';
+  gameState='playing';
+  updateQuestLog();
+  setTimeout(()=>showToast('🏏 Vous avez une batte — frappez les zombies !'),800);
+  setTimeout(()=>showToast('🎒 Fouilles les maisons pour remplir votre sac'),2500);
+  setTimeout(()=>showToast('🔥 Videz le sac à la base pour récupérer les ressources'),4500);
+  setTimeout(()=>showToast('🏪 Armurerie près de la base — achetez des armes avec 💰'),6500);
+  setTimeout(()=>showToast('🌙 La nuit, des zombies attaquent — restez à la base !'),9000);
+}
+function gameOver(){
+  saveInventory(); // on conserve les armes achetées
+  gameState='gameover';
+  document.getElementById('statDay').textContent=dayCount;
+  document.getElementById('statKills').textContent=killCount;
+  document.getElementById('statTime').textContent=formatTime(survivalTime);
+  document.getElementById('gameOverScreen').classList.remove('hidden');
+  dCanvas.style.display='none';
+}
+function victory(){
+  gameState='victory';
+  document.getElementById('vstatKills').textContent=killCount;
+  document.getElementById('vstatDay').textContent=dayCount;
+  document.getElementById('vstatTime').textContent=formatTime(survivalTime);
+  document.getElementById('victoryScreen').classList.remove('hidden');
+}
+
+document.getElementById('btnStart').addEventListener('click',()=>{
+  if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  document.getElementById('startScreen').classList.add('hidden');
+  startGame(true); // nouveau jeu = reset complet
+});
+document.getElementById('btnRetry').addEventListener('click',()=>{
+  document.getElementById('gameOverScreen').classList.add('hidden');
+  startGame(false); // réessayer = on garde armes + argent
+});
+document.getElementById('btnVictoryRetry').addEventListener('click',()=>{document.getElementById('victoryScreen').classList.add('hidden');startGame();});
+
+/* ══════════════════════════════════════════════
+   MAIN LOOP
+══════════════════════════════════════════════ */
+
+// Initialiser la map dès le chargement — on voit la map derrière l'écran de démarrage
+function initWorld(){
+  resetInventory();
+  player=freshPlayer();
+  zombies=[];bullets=[];particles=[];toasts=[];waveBanner=null;foodDrops=[];
+  wave=0;killCount=0;survivalTime=0;
+  waveQueue=[];spawnTimer=0;spawnInterval=1;waveBreakTimer=null;
+  screenShake=0;baseLevel=0;cycleTimer=0;dayCount=1;isNight=false;nightAlpha=0;
+  nightJustStarted=false;dayJustStarted=false;bossSpawnedThisNight=false;
+  craftedWalls=[];dungeonBullets=[];dungeonZombies=[];dungeonParticles=[];
+  labBoss=null;finalBoss=null;finalBossSpawned=false;finalBossDefeated=false;
+  inDungeon=false;dungeonCleared=false;labBossDefeated=false;hasKey=false;
+  PORTAL1.open=false;PORTAL2.open=false;questStep=0;
+  for(const t of trees) t.hp=t.maxHp;
+  buildBaseWalls();gateOpen=false;
+  spawnHouses();
+  campfirePhase=0;campfireFlicker=1;playerInBase=false;
+}
+initWorld(); // map visible dès le chargement
+
+let lastTime=0;
+function loop(now){
+  const t=now/1000,dt=Math.min(.05,(now-lastTime)/1000||0);lastTime=now;
+  // Animer le feu de camp même sur l'écran de démarrage
+  campfireFlicker=0.8+Math.sin(t*8+campfirePhase)*0.15+Math.random()*0.05;
+  campfirePhase+=dt;
+  for(const l of lights) l.flicker=0.85+Math.sin(t*3+l.phase)*0.1+Math.random()*0.04;
+  update(dt,t);render(t);requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
