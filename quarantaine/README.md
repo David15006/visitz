@@ -25,4 +25,12 @@ Ouvrez simplement `index.html` dans un navigateur — tout est autonome dans un 
 - **Stick gauche** : se déplacer
 - **Stick droit** : viser & tirer
 - **Bouton central** : interagir (fouiller, améliorer, entrer dans un portail…)
-- **Clavier** : WASD pour se déplacer, souris pour viser et tirer
+- **Barre de gauche** : changer d'arme au doigt (arme équipée surlignée, munitions affichées)
+- **Bouton pause** (haut droite) : mettre en pause
+- **Clavier** : WASD pour se déplacer, souris pour viser et tirer, touches `1`-`6` pour les armes, `P` pour la pause
+
+## Confort & sauvegarde
+
+- **Progression sauvegardée** dans le navigateur (localStorage) : argent, armes débloquées et munitions sont conservés d'une session à l'autre.
+- **Records persistants** (meilleur jour, éliminations, temps) affichés au menu et à l'écran de fin.
+- Bouton **« Réinitialiser la progression »** sur l'écran d'accueil pour repartir de zéro.

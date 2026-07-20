@@ -54,6 +54,20 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 #shopPanel.open{display:block;}
 #shopPanel h3{margin:0 0 10px;font-size:18px;color:#80e080;letter-spacing:1px;text-transform:uppercase;}
 #closeShop{position:absolute;top:10px;right:14px;background:none;border:none;color:#6a6460;font-size:20px;cursor:pointer;}
+/* Sélecteur d'armes tactile */
+#weaponBar{position:fixed;left:6px;top:50%;transform:translateY(-50%);z-index:28;display:none;flex-direction:column;gap:6px;}
+#weaponBar.visible{display:flex;}
+.wbtn{width:50px;height:50px;border-radius:8px;background:rgba(16,14,10,0.8);border:2px solid rgba(255,255,255,0.14);color:#e0d8cc;font-family:'Oswald',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;}
+.wbtn .wi{font-size:22px;}
+.wbtn .wa{font-size:9px;color:#ffd166;margin-top:1px;font-weight:600;}
+.wbtn.active{border-color:#ffd166;background:rgba(60,45,20,0.9);box-shadow:0 0 10px rgba(255,210,80,0.45);}
+.wbtn.empty{opacity:.4;}
+/* Bouton pause */
+#pauseBtn{position:fixed;top:8px;right:14px;z-index:60;width:38px;height:38px;border-radius:8px;background:rgba(16,14,10,0.75);border:1px solid rgba(255,255,255,0.18);color:#e0d8cc;font-size:16px;cursor:pointer;display:none;-webkit-tap-highlight-color:transparent;}
+#pauseBtn.visible{display:block;}
+.menu-secondary{font-family:'Oswald',sans-serif;font-weight:500;letter-spacing:1px;font-size:12px;color:#b8ada0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);padding:8px 20px;border-radius:4px;cursor:pointer;text-transform:uppercase;margin-top:14px;}
+.menu-secondary:active{transform:translateY(1px);}
+.best-line{color:#c8a060;font-size:13px;letter-spacing:.5px;margin:0 0 18px 0;line-height:1.5;max-width:540px;}
 </style>
 </head>
 <body>
@@ -66,14 +80,18 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 <div id="actionBtn"><div class="icon" id="actionIcon">🔥</div><div id="actionLabel">ACTION</div></div>
 <div id="craftPanel"><button id="closeCraft">✕</button><h3 id="craftTitle">🔥 Feu de camp</h3><div id="craftList"></div></div>
 <div id="shopPanel"><button id="closeShop">✕</button><h3>🏪 ARMURERIE</h3><div style="font-size:11px;color:#70a070;margin-bottom:8px;">Les armes achetées sont conservées même après la mort !</div><div id="shopList"></div></div>
+<div id="weaponBar"></div>
+<button id="pauseBtn" aria-label="Pause">⏸</button>
 
 <!-- START -->
 <div class="overlay" id="startScreen">
   <h1 class="title">QUARANTAINE</h1>
-  <p class="subtitle">Une infection a ravagé la ville. Vous êtes seul, armé d'un pistolet, avec pour seul refuge un vieux feu de camp.<br><br>
+  <p class="subtitle">Une infection a ravagé la ville. Vous êtes seul, armé d'une simple batte, avec pour seul refuge un vieux feu de camp.<br><br>
   Survivez le temps qu'il faut — <span style="color:#ffd166;">au bout du 2ème jour</span>, un portail mystérieux s'ouvrira. Ce qui se cache derrière décidera de votre destin.</p>
-  <button class="btn" id="btnStart" style="margin-bottom:16px;">⚔️ Commencer</button>
-  <p style="color:#5a5550;font-size:12px;letter-spacing:.5px;">Stick gauche : déplacer · Stick droit : viser & tirer · Bouton central : interagir<br>Clavier : WASD + souris aussi supportés</p>
+  <p class="best-line" id="bestLine"></p>
+  <button class="btn" id="btnStart" style="margin-bottom:6px;">⚔️ Commencer</button>
+  <button class="menu-secondary" id="btnReset">🗑️ Réinitialiser la progression</button>
+  <p style="color:#5a5550;font-size:12px;letter-spacing:.5px;margin-top:18px;">Stick gauche : déplacer · Stick droit : viser & tirer · Bouton central : interagir<br>Barre de gauche : changer d'arme · Clavier : WASD + souris · 1-6 armes · P pause</p>
 </div>
 
 <!-- GAME OVER -->
@@ -85,6 +103,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
     <div class="stat-box"><div class="num" id="statKills">0</div><div class="lbl">Éliminations</div></div>
     <div class="stat-box"><div class="num" id="statTime">0s</div><div class="lbl">Temps survécu</div></div>
   </div>
+  <p class="best-line" id="goRecord" style="text-align:center;"></p>
   <button class="btn" id="btnRetry">Réessayer</button>
 </div>
 
@@ -151,6 +170,7 @@ const BASE={x:1800,y:1200};
 const NUM_WALL_SEGS = 16;   // nombre de segments sur le cercle
 const GATE_ANGLE_SIZE = 0.35; // angle (radians) de l'ouverture de la porte
 const GATE_ANGLE = Math.PI / 2; // porte au sud (bas)
+const BASE_WALL_MAX_HP = 120; // PV max d'un segment de mur de la base
 
 let baseWalls = [];
 let gateOpen = false;
@@ -406,6 +426,18 @@ const WEAPONS={
   shotgun:{name:"Fusil à pompe",     damage:12,fireRate:.70, bulletSpeed:850, spread:.32, pellets:6,maxAmmo:32,     color:"#ff6b6b"},
   rifle:  {name:"Fusil d'assaut",    damage:26,fireRate:.14, bulletSpeed:1200,spread:.035,pellets:1,maxAmmo:90,     color:"#6be3ff"},
 };
+// Ordre & icônes partagés pour le sélecteur d'armes (tactile + clavier)
+const WEAPON_ORDER=['bat','hammer','axe','smg','shotgun','rifle'];
+const WEAPON_ICONS={bat:'🏏',hammer:'🔨',axe:'🪓',smg:'🔫',shotgun:'💥',rifle:'🎯'};
+function selectWeapon(type){
+  if(!player||!WEAPONS[type]) return;
+  const alwaysOwned=(type==='bat'||type==='hammer');
+  const owned = alwaysOwned || (type==='axe'?player.hasAxe:inventory.owned[type]);
+  if(!owned){showToast('🔒 Arme non débloquée');return;}
+  const w=WEAPONS[type];
+  if(!w.melee&&(player.ammo[type]||0)<=0){showToast('📦 Plus de munitions pour cette arme');return;}
+  player.currentWeapon=type;inventory.currentWeapon=type;
+}
 
 /* ══════════════════════════════════════════════
    ZOMBIE TYPES
@@ -474,6 +506,56 @@ function resetInventory(){
   inventory.ammo={bat:Infinity,hammer:Infinity,axe:Infinity,smg:0,shotgun:0,rifle:0};
   inventory.currentWeapon='bat';
   inventory.bag=[null,null,null];
+}
+
+/* ══════════════════════════════════════════════
+   SAUVEGARDE (localStorage) — progression persistante
+══════════════════════════════════════════════ */
+const SAVE_KEY='quarantaine_save_v1';
+let records={bestDay:0,bestKills:0,bestTime:0};
+function persistSave(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      money:inventory.money,
+      owned:inventory.owned,
+      ammo:{smg:inventory.ammo.smg||0,shotgun:inventory.ammo.shotgun||0,rifle:inventory.ammo.rifle||0},
+      currentWeapon:inventory.currentWeapon,
+      records,
+    }));
+  }catch(e){}
+}
+function loadSave(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    const s=JSON.parse(raw);
+    if(typeof s.money==='number') inventory.money=s.money;
+    if(s.owned) Object.assign(inventory.owned,s.owned);
+    if(s.ammo){for(const k of['smg','shotgun','rifle']) if(typeof s.ammo[k]==='number') inventory.ammo[k]=s.ammo[k];}
+    if(s.currentWeapon&&WEAPONS[s.currentWeapon]) inventory.currentWeapon=s.currentWeapon;
+    if(s.records) records=Object.assign(records,s.records);
+    // Les armes de mêlée gardent des munitions infinies (JSON transforme Infinity en null)
+    inventory.ammo.bat=inventory.ammo.hammer=inventory.ammo.axe=Infinity;
+  }catch(e){}
+}
+function recordRun(){
+  if(dayCount>records.bestDay) records.bestDay=dayCount;
+  if(killCount>records.bestKills) records.bestKills=killCount;
+  if(survivalTime>records.bestTime) records.bestTime=survivalTime;
+}
+function ownedWeaponsLabel(){
+  const names=WEAPON_ORDER.filter(t=>t==='bat'||t==='hammer'||(t==='axe'?inventory.owned.axe:inventory.owned[t]))
+    .map(t=>WEAPON_ICONS[t]);
+  return names.join(' ');
+}
+function updateBestLine(){
+  const el=document.getElementById('bestLine');
+  if(!el) return;
+  if(records.bestDay>0){
+    el.innerHTML=`🏆 Record : Jour ${records.bestDay} · ${records.bestKills} éliminations · ${formatTime(records.bestTime)}<br>💰 ${inventory.money}$ · Armes : ${ownedWeaponsLabel()}`;
+  } else {
+    el.innerHTML=`💰 ${inventory.money}$ · Armes : ${ownedWeaponsLabel()}`;
+  }
 }
 
 function freshPlayer(){
@@ -808,7 +890,8 @@ function fireDungeonWeapon(){
     showToast('🏏 Plus de munitions !');return;
   }
   player.fireCooldown=w.fireRate;
-  if(player.currentWeapon!=='pistol') player.ammo[player.currentWeapon]--;
+  player.ammo[player.currentWeapon]--;
+  inventory.ammo[player.currentWeapon]=player.ammo[player.currentWeapon];
   for(let i=0;i<w.pellets;i++){
     const sp=(Math.random()-.5)*w.spread,ang=dungeonPlayer.aimAngle+sp;
     dungeonBullets.push({x:dungeonPlayer.x+Math.cos(dungeonPlayer.aimAngle)*20,y:dungeonPlayer.y+Math.sin(dungeonPlayer.aimAngle)*20,vx:Math.cos(ang)*w.bulletSpeed,vy:Math.sin(ang)*w.bulletSpeed,damage:w.damage,life:.9,color:w.color});
@@ -1072,6 +1155,8 @@ function buyItem(item){
     showToast(`${item.icon} ${item.name} acheté${item.ammo?` (${item.ammo} munitions)`:''} !`);
   }
   playSound('pickup');
+  persistSave();
+  weaponBarSig=''; // rafraîchir la barre d'armes (nouvelle arme / munitions)
   renderShop();
 }
 
@@ -1196,6 +1281,45 @@ function doAction(){
 document.getElementById('actionBtn').addEventListener('click',doAction);
 
 /* ══════════════════════════════════════════════
+   SÉLECTEUR D'ARMES TACTILE + PAUSE (chrome DOM)
+══════════════════════════════════════════════ */
+let weaponBarSig='';
+function updateWeaponBar(){
+  if(!player) return;
+  const bar=document.getElementById('weaponBar');
+  const list=WEAPON_ORDER.filter(t=>t==='bat'||t==='hammer'||(t==='axe'?player.hasAxe:inventory.owned[t]));
+  // Signature pour éviter de reconstruire le DOM à chaque frame
+  const sig=list.map(t=>{const w=WEAPONS[t];return t+':'+(w.melee?'x':(player.ammo[t]||0));}).join('|')+'/'+player.currentWeapon;
+  if(sig===weaponBarSig) return;
+  weaponBarSig=sig;
+  let h='';
+  for(const t of list){
+    const w=WEAPONS[t];
+    const ammo=w.melee?'∞':(player.ammo[t]||0);
+    const empty=!w.melee&&(player.ammo[t]||0)<=0;
+    const cls='wbtn'+(t===player.currentWeapon?' active':'')+(empty?' empty':'');
+    h+=`<button class="${cls}" data-w="${t}"><span class="wi">${WEAPON_ICONS[t]}</span><span class="wa">${ammo}</span></button>`;
+  }
+  bar.innerHTML=h;
+  bar.querySelectorAll('.wbtn').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();selectWeapon(b.dataset.w);weaponBarSig='';updateWeaponBar();}));
+}
+let paused=false;
+function setPaused(p){
+  if(gameState!=='playing'&&gameState!=='dungeon'){paused=false;}
+  else{paused=p;}
+  document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';
+}
+function togglePause(){setPaused(!paused);}
+document.getElementById('pauseBtn').addEventListener('click',e=>{e.stopPropagation();togglePause();});
+function updateHudChrome(){
+  const play=(gameState==='playing'||gameState==='dungeon');
+  document.getElementById('weaponBar').classList.toggle('visible',play);
+  document.getElementById('pauseBtn').classList.toggle('visible',play);
+  if(!play&&paused) setPaused(false);
+  if(play) updateWeaponBar();
+}
+
+/* ══════════════════════════════════════════════
    WORLD UPDATE
 ══════════════════════════════════════════════ */
 const keys={};
@@ -1214,11 +1338,8 @@ window.addEventListener('keydown',e=>{
   if(e.key==='b'||e.key==='B'&&gameState==='playing') buildWall();
   if(e.key==='c'||e.key==='C'&&gameState==='playing') openCraft();
   if(e.key==='Escape'){closeCraft();closeShop();}
-  if(e.key==='1') player&&(player.currentWeapon='pistol');
-  if(e.key==='2'&&player&&player.hasAxe) player.currentWeapon='axe';
-  if(e.key==='3'&&player&&player.ammo.smg>0) player.currentWeapon='smg';
-  if(e.key==='4'&&player&&player.ammo.shotgun>0) player.currentWeapon='shotgun';
-  if(e.key==='5'&&player&&player.ammo.rifle>0) player.currentWeapon='rifle';
+  if(e.key==='p'||e.key==='P'){togglePause();}
+  if(e.key>='1'&&e.key<='6'){const t=WEAPON_ORDER[+e.key-1];if(t) selectWeapon(t);}
 });
 let mouseDown=false;
 function updateMouseAim(e){
@@ -1317,6 +1438,7 @@ function updateWorldZombies(dt){
 }
 
 function update(dt,t){
+  if(paused) return;
   if(gameState==='dungeon'){updateDungeon(dt);updateToasts(dt);updateLights(dt,t);return;}
   if(gameState!=='playing') return;
   survivalTime+=dt;
@@ -1411,7 +1533,6 @@ function drawBagHUD(c){
   const y = H - slotH - 8; // collé tout en bas
 
   const ICONS={wood:'🪵',metal:'🔩',money:'💰'};
-  const WEAPON_ICONS={bat:'🏏',axe:'🪓',smg:'🔫',shotgun:'💥',rifle:'🎯'};
 
   // ── CASE ARME COURANTE ──
   const wx = startX;
@@ -1789,7 +1910,7 @@ function drawHUD(c,isDungeon){
   c.font='400 11px Oswald,sans-serif';c.fillStyle='rgba(200,180,140,.7)';
   if(!isDungeon) c.fillText(isNight?'Base = zone protégée':'Survivez · Récoltez · Explorez',W/2,52);
   // Timer
-  if(!isDungeon){c.textAlign='end';c.font='600 15px Oswald,sans-serif';c.fillStyle='#e9e3da';c.fillText(fmtHUD(survivalTime),W-24,34);c.textAlign='left';}
+  if(!isDungeon){c.textAlign='end';c.font='600 15px Oswald,sans-serif';c.fillStyle='#e9e3da';c.fillText(fmtHUD(survivalTime),W-62,34);c.textAlign='left';}
   // Pas d'update weaponHint (supprimé) — l'arme est visible dans l'inventaire bas
   if(isNight&&!isDungeon){ctx.fillStyle=`rgba(80,0,120,${.04+nightAlpha*.08})`;ctx.fillRect(0,0,W,H);}
 }
@@ -1935,15 +2056,27 @@ function renderWorld(t){
   if(gameState==='playing'){drawHUD();drawToastsUI();drawWaveBannerUI();drawBagHUD(ctx);}
 }
 
+function drawPauseOverlay(){
+  const c=(gameState==='dungeon')?dCtx:ctx;
+  c.save();
+  c.fillStyle='rgba(0,0,0,0.55)';c.fillRect(0,0,W,H);
+  c.fillStyle='#ffd166';c.font='700 46px Oswald,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText('⏸ PAUSE',W/2,H/2-14);
+  c.font='400 15px Oswald,sans-serif';c.fillStyle='#c8bfae';
+  c.fillText('Touchez ▶ ou appuyez sur P pour reprendre',W/2,H/2+26);
+  c.restore();c.textAlign='left';c.textBaseline='alphabetic';
+}
 function render(t){
+  updateHudChrome();
   ctx.fillStyle='#0a0808';
   ctx.fillRect(0,0,W,H);
   // On rend toujours la map — même sur l'écran de démarrage et game over
-  if(gameState==='dungeon'){renderDungeon(t);drawMinimap();return;}
+  if(gameState==='dungeon'){renderDungeon(t);drawMinimap();if(paused)drawPauseOverlay();return;}
   if(player){
     renderWorld(t); // visible en start, playing, gameover, victory
     drawMinimap();
   }
+  if(paused) drawPauseOverlay();
 }
 
 /* ══════════════════════════════════════════════
@@ -1977,14 +2110,19 @@ function startGame(fullReset){
 }
 function gameOver(){
   saveInventory(); // on conserve les armes achetées
+  const beatDay=dayCount>records.bestDay, beatKills=killCount>records.bestKills, beatTime=survivalTime>records.bestTime;
+  recordRun();persistSave();
   gameState='gameover';
   document.getElementById('statDay').textContent=dayCount;
   document.getElementById('statKills').textContent=killCount;
   document.getElementById('statTime').textContent=formatTime(survivalTime);
+  const rec=document.getElementById('goRecord');
+  if(rec) rec.innerHTML=(beatDay||beatKills||beatTime)?'🎉 Nouveau record !':`🏆 Record : Jour ${records.bestDay} · ${records.bestKills} éliminations · ${formatTime(records.bestTime)}`;
   document.getElementById('gameOverScreen').classList.remove('hidden');
   dCanvas.style.display='none';
 }
 function victory(){
+  saveInventory();recordRun();persistSave();
   gameState='victory';
   document.getElementById('vstatKills').textContent=killCount;
   document.getElementById('vstatDay').textContent=dayCount;
@@ -1995,7 +2133,18 @@ function victory(){
 document.getElementById('btnStart').addEventListener('click',()=>{
   if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
   document.getElementById('startScreen').classList.add('hidden');
-  startGame(true); // nouveau jeu = reset complet
+  startGame(false); // on conserve la progression sauvegardée (armes + argent)
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  resetInventory();
+  records={bestDay:0,bestKills:0,bestTime:0};
+  player=freshPlayer();
+  weaponBarSig='';
+  updateBestLine();
+  const b=document.getElementById('btnReset');
+  b.textContent='✅ Progression réinitialisée';
+  setTimeout(()=>{b.textContent='🗑️ Réinitialiser la progression';},1600);
 });
 document.getElementById('btnRetry').addEventListener('click',()=>{
   document.getElementById('gameOverScreen').classList.add('hidden');
@@ -2026,6 +2175,9 @@ function initWorld(){
   campfirePhase=0;campfireFlicker=1;playerInBase=false;
 }
 initWorld(); // map visible dès le chargement
+loadSave(); // restaurer la progression sauvegardée (armes, argent, records)
+player=freshPlayer(); // appliquer l'inventaire chargé au joueur
+updateBestLine();
 
 let lastTime=0;
 function loop(now){
