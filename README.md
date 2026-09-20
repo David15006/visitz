@@ -16,21 +16,23 @@ demos.html      → lanceur vers les applications de démonstration
 visitepro_*.html, visitepro2_*.html → applications de démo
 ```
 
-## Remplacer les captures d'écran
+## Captures d'écran
 
-Le dossier `images/` contient des **placeholders** à remplacer par vos vraies
-captures. Gardez les mêmes noms de fichiers pour que la page les affiche
-automatiquement :
+Le dossier `images/` contient de **vraies captures** de l'application VisitePro,
+prises directement depuis les démos du dépôt (`visitepro_DEMO_PC.html` et
+`visitepro_DEMO-3.html`) :
 
-| Fichier | Contenu attendu | Format conseillé |
+| Fichier | Écran | Format |
 |---|---|---|
-| `images/screenshot-dashboard.png` | Tableau de bord de pilotage | ~1440 × 900 px (paysage) |
-| `images/screenshot-fiche-chantier.png` | Fiche d'un chantier | ~1440 × 900 px (paysage) |
-| `images/screenshot-rapport-visite.png` | Rapport de visite | ~1440 × 900 px (paysage) |
-| `images/screenshot-mobile.png` | Écran de l'application mobile | ~720 × 1280 px (portrait) |
+| `images/screenshot-dashboard.png` | Tableau de bord de pilotage | 1440 × 900 px (paysage) |
+| `images/screenshot-chantiers.png` | Liste des chantiers | 1440 × 900 px (paysage) |
+| `images/screenshot-fiche-chantier.png` | Fiche chantier (résumé) | 1440 × 900 px (paysage) |
+| `images/screenshot-rapport-visite.png` | Historique des visites | 1440 × 900 px (paysage) |
+| `images/screenshot-mobile.png` | Application mobile (fiche chantier) | 780 × 1688 px (portrait) |
 
-Les trois premières s'affichent dans des cadres « navigateur », la dernière dans
-un cadre « mobile ».
+Les captures paysage s'affichent dans des cadres « navigateur », la capture
+portrait dans un cadre « mobile ». Pour les mettre à jour, remplacez simplement
+le fichier en gardant le même nom : aucune modification de code n'est nécessaire.
 
 ## Formulaire de démo
 
